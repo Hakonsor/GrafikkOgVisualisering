@@ -1,0 +1,160 @@
+The system is: Windows - 10.0.22621 - AMD64
+Compiling the C compiler identification source file "CMakeCCompilerId.c" succeeded.
+Compiler: C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.35.32215/bin/Hostx64/x64/cl.exe 
+Build flags: 
+Id flags:  
+
+The output was:
+0
+Microsoft (R) C/C++ Optimizing Compiler Version 19.35.32216.1 for x64
+Copyright (C) Microsoft Corporation.  All rights reserved.
+
+CMakeCCompilerId.c
+Microsoft (R) Incremental Linker Version 14.35.32216.1
+Copyright (C) Microsoft Corporation.  All rights reserved.
+
+/out:CMakeCCompilerId.exe 
+CMakeCCompilerId.obj 
+
+
+Compilation of the C compiler identification source "CMakeCCompilerId.c" produced "CMakeCCompilerId.exe"
+
+Compilation of the C compiler identification source "CMakeCCompilerId.c" produced "CMakeCCompilerId.obj"
+
+The C compiler identification is MSVC, found in "C:/Users/Håkon/source/repos/Grafikk prosjekt/TDT4230-Assignment-1/out/build/x64-Debug/CMakeFiles/3.25.1-msvc1/CompilerIdC/CMakeCCompilerId.exe"
+
+Compiling the CXX compiler identification source file "CMakeCXXCompilerId.cpp" succeeded.
+Compiler: C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.35.32215/bin/Hostx64/x64/cl.exe 
+Build flags: 
+Id flags:  
+
+The output was:
+0
+Microsoft (R) C/C++ Optimizing Compiler Version 19.35.32216.1 for x64
+Copyright (C) Microsoft Corporation.  All rights reserved.
+
+CMakeCXXCompilerId.cpp
+Microsoft (R) Incremental Linker Version 14.35.32216.1
+Copyright (C) Microsoft Corporation.  All rights reserved.
+
+/out:CMakeCXXCompilerId.exe 
+CMakeCXXCompilerId.obj 
+
+
+Compilation of the CXX compiler identification source "CMakeCXXCompilerId.cpp" produced "CMakeCXXCompilerId.exe"
+
+Compilation of the CXX compiler identification source "CMakeCXXCompilerId.cpp" produced "CMakeCXXCompilerId.obj"
+
+The CXX compiler identification is MSVC, found in "C:/Users/Håkon/source/repos/Grafikk prosjekt/TDT4230-Assignment-1/out/build/x64-Debug/CMakeFiles/3.25.1-msvc1/CompilerIdCXX/CMakeCXXCompilerId.exe"
+
+Detecting C compiler ABI info compiled with the following output:
+Change Dir: C:/Users/Håkon/source/repos/Grafikk prosjekt/TDT4230-Assignment-1/out/build/x64-Debug/CMakeFiles/CMakeScratch/TryCompile-s1p76c
+
+Run Build Command(s):C:/Program Files/Microsoft Visual Studio/2022/Community/Common7/IDE/CommonExtensions/Microsoft/CMake/Ninja/ninja.exe cmTC_82482 && [1/2] Building C object CMakeFiles\cmTC_82482.dir\CMakeCCompilerABI.c.obj
+[2/2] Linking C executable cmTC_82482.exe
+
+
+
+Detecting CXX compiler ABI info compiled with the following output:
+Change Dir: C:/Users/Håkon/source/repos/Grafikk prosjekt/TDT4230-Assignment-1/out/build/x64-Debug/CMakeFiles/CMakeScratch/TryCompile-7a0fbl
+
+Run Build Command(s):C:/Program Files/Microsoft Visual Studio/2022/Community/Common7/IDE/CommonExtensions/Microsoft/CMake/Ninja/ninja.exe cmTC_afd4e && [1/2] Building CXX object CMakeFiles\cmTC_afd4e.dir\CMakeCXXCompilerABI.cpp.obj
+[2/2] Linking CXX executable cmTC_afd4e.exe
+
+
+
+Determining if the include file sys/types.h exists passed with the following output:
+Change Dir: C:/Users/Håkon/source/repos/Grafikk prosjekt/TDT4230-Assignment-1/out/build/x64-Debug/CMakeFiles/CMakeScratch/TryCompile-k3g7uf
+
+Run Build Command(s):C:/Program Files/Microsoft Visual Studio/2022/Community/Common7/IDE/CommonExtensions/Microsoft/CMake/Ninja/ninja.exe cmTC_94f4c && [1/2] Building C object CMakeFiles\cmTC_94f4c.dir\CheckIncludeFile.c.obj
+[2/2] Linking C executable cmTC_94f4c.exe
+
+
+
+Determining if the include file stdint.h exists passed with the following output:
+Change Dir: C:/Users/Håkon/source/repos/Grafikk prosjekt/TDT4230-Assignment-1/out/build/x64-Debug/CMakeFiles/CMakeScratch/TryCompile-i173om
+
+Run Build Command(s):C:/Program Files/Microsoft Visual Studio/2022/Community/Common7/IDE/CommonExtensions/Microsoft/CMake/Ninja/ninja.exe cmTC_89485 && [1/2] Building C object CMakeFiles\cmTC_89485.dir\CheckIncludeFile.c.obj
+[2/2] Linking C executable cmTC_89485.exe
+
+
+
+Determining if the include file stddef.h exists passed with the following output:
+Change Dir: C:/Users/Håkon/source/repos/Grafikk prosjekt/TDT4230-Assignment-1/out/build/x64-Debug/CMakeFiles/CMakeScratch/TryCompile-adyrnr
+
+Run Build Command(s):C:/Program Files/Microsoft Visual Studio/2022/Community/Common7/IDE/CommonExtensions/Microsoft/CMake/Ninja/ninja.exe cmTC_3e5b6 && [1/2] Building C object CMakeFiles\cmTC_3e5b6.dir\CheckIncludeFile.c.obj
+[2/2] Linking C executable cmTC_3e5b6.exe
+
+
+
+Determining size of void* passed with the following output:
+Change Dir: C:/Users/Håkon/source/repos/Grafikk prosjekt/TDT4230-Assignment-1/out/build/x64-Debug/CMakeFiles/CMakeScratch/TryCompile-2dmxhr
+
+Run Build Command(s):C:/Program Files/Microsoft Visual Studio/2022/Community/Common7/IDE/CommonExtensions/Microsoft/CMake/Ninja/ninja.exe cmTC_8e0f1 && [1/2] Building C object CMakeFiles\cmTC_8e0f1.dir\SIZEOF_VOID_PTR.c.obj
+[2/2] Linking C executable cmTC_8e0f1.exe
+
+
+
+Performing C++ SOURCE FILE Test SUPPORTS_VARIADIC_TEMPLATES succeeded with the following output:
+Change Dir: C:/Users/Håkon/source/repos/Grafikk prosjekt/TDT4230-Assignment-1/out/build/x64-Debug/CMakeFiles/CMakeScratch/TryCompile-z70ing
+
+Run Build Command(s):C:/Program Files/Microsoft Visual Studio/2022/Community/Common7/IDE/CommonExtensions/Microsoft/CMake/Ninja/ninja.exe cmTC_3e1f6 && [1/2] Building CXX object CMakeFiles\cmTC_3e1f6.dir\src.cxx.obj
+cl : Command line warning D9025 : overriding '/W3' with '/W4'
+[2/2] Linking CXX executable cmTC_3e1f6.exe
+
+
+Source file was:
+
+  template <class T, class ...Types>
+  struct S { typedef typename S<Types...>::type type; };
+  int main() {}
+
+Performing C++ SOURCE FILE Test SUPPORTS_USER_DEFINED_LITERALS succeeded with the following output:
+Change Dir: C:/Users/Håkon/source/repos/Grafikk prosjekt/TDT4230-Assignment-1/out/build/x64-Debug/CMakeFiles/CMakeScratch/TryCompile-rv6jqz
+
+Run Build Command(s):C:/Program Files/Microsoft Visual Studio/2022/Community/Common7/IDE/CommonExtensions/Microsoft/CMake/Ninja/ninja.exe cmTC_e0129 && [1/2] Building CXX object CMakeFiles\cmTC_e0129.dir\src.cxx.obj
+cl : Command line warning D9025 : overriding '/W3' with '/W4'
+[2/2] Linking CXX executable cmTC_e0129.exe
+
+
+Source file was:
+
+  void operator"" _udl(long double);
+  int main() {}
+
+Performing C++ SOURCE FILE Test FMT_HAS_VARIANT succeeded with the following output:
+Change Dir: C:/Users/Håkon/source/repos/Grafikk prosjekt/TDT4230-Assignment-1/out/build/x64-Debug/CMakeFiles/CMakeScratch/TryCompile-hp2x8l
+
+Run Build Command(s):C:/Program Files/Microsoft Visual Studio/2022/Community/Common7/IDE/CommonExtensions/Microsoft/CMake/Ninja/ninja.exe cmTC_a9f8a && [1/2] Building CXX object CMakeFiles\cmTC_a9f8a.dir\src.cxx.obj
+cl : Command line warning D9025 : overriding '/W3' with '/W4'
+cl : Command line warning D9002 : ignoring unknown option '-std=c++1z'
+C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.35.32215\include\variant(13): warning STL4038: The contents of <variant> are available only with C++17 or later.
+[2/2] Linking CXX executable cmTC_a9f8a.exe
+
+
+Source file was:
+
+  #include <variant>
+  int main() {}
+
+Determining if the _strtod_l exist passed with the following output:
+Change Dir: C:/Users/Håkon/source/repos/Grafikk prosjekt/TDT4230-Assignment-1/out/build/x64-Debug/CMakeFiles/CMakeScratch/TryCompile-s8g5a5
+
+Run Build Command(s):C:/Program Files/Microsoft Visual Studio/2022/Community/Common7/IDE/CommonExtensions/Microsoft/CMake/Ninja/ninja.exe cmTC_688ed && [1/2] Building C object CMakeFiles\cmTC_688ed.dir\CheckSymbolExists.c.obj
+[2/2] Linking C executable cmTC_688ed.exe
+
+
+File CheckSymbolExists.c:
+/* */
+#include <stdlib.h>
+
+int main(int argc, char** argv)
+{
+  (void)argv;
+#ifndef _strtod_l
+  return ((int*)(&_strtod_l))[argc];
+#else
+  (void)argc;
+  return 0;
+#endif
+}
