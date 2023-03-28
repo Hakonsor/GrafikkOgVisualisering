@@ -40,3 +40,18 @@
 
 /.vscode/*
 /.vs/
+/out/build/x64-Debug/CMakeFiles/glowbox.dir/vc140.pdb
+/out/build/x64-Debug/CMakeFiles/glowbox.dir/manifest.res
+/out/build/x64-Debug/CMakeFiles/glowbox.dir/manifest.rc
+/out/build/x64-Debug/CMakeFiles/glowbox.dir/intermediate.manifest
+/out/build/x64-Debug/CMakeFiles/glowbox.dir/embed.manifest
+/out/build/x64-Debug/lib/fmt/CMakeFiles/fmt.dir/fmt.pdb
+/out/build/x64-Debug/lib/glfw/src/CMakeFiles/glfw.dir/glfw.pdb
+/out/build/x64-Debug/lib/SFML/lib/sfml-system-s-d.pdb
+/out/build/x64-Debug/lib/SFML/lib/sfml-main-s-d.pdb
+/out/build/x64-Debug/lib/SFML/lib/sfml-audio-s-d.pdb
+/out/build/x64-Debug/glowbox.pdb
+/out/build/x64-Debug/glowbox.ilk
+/out/build/x64-Debug/.ninja_log
+/out/build/x64-Debug/.ninja_deps
+/src/charmap.png
