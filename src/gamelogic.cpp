@@ -17,7 +17,7 @@
 #include "sceneGraph.hpp"
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/transform.hpp>
-
+#include <conio.h>
 #include "utilities/imageLoader.hpp"
 #include "utilities/glfont.h"
 
@@ -32,6 +32,12 @@ double padPositionZ = 0;
 
 unsigned int currentKeyFrame = 0;
 unsigned int previousKeyFrame = 0;
+
+glm::vec3 cameraPosition = glm::vec3(0, 2, -40);
+
+float rotasjonupanddown = 0.0;
+float rotasjonfloat = 0.0;
+float rotasjonsomething = 0.0;
 
 SceneNode* rootNode;
 SceneNode* boxNode;
@@ -244,10 +250,55 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     std::cout << "Ready. Click to start!" << std::endl;
 }
 
+void processInput(GLFWwindow* window,float timeDelta) {
+
+    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
+        cameraPosition.x -= timeDelta * 100.0;
+    }
+    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
+        cameraPosition.x += timeDelta * 100.0;
+    }
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
+        cameraPosition.z -= timeDelta * 100.0;
+    }
+    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
+        cameraPosition.z += timeDelta * 100.0;
+    }
+    if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
+        cameraPosition.y += timeDelta * 100.0;
+    }
+    if (glfwGetKey(window, GLFW_KEY_RIGHT_SHIFT) == GLFW_PRESS) {
+        cameraPosition.y -= timeDelta * 100.0;
+    }
+    if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS) {
+        rotasjonsomething -= timeDelta * 100.0;
+    }
+    if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) {
+        rotasjonsomething -= timeDelta * 100.0;
+    }
+    if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) {
+        rotasjonupanddown += timeDelta;
+    }
+    if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) {
+        rotasjonupanddown -= timeDelta;
+    }
+    if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS) {
+        rotasjonfloat += timeDelta;
+    }
+    if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS) {
+        rotasjonfloat -= timeDelta;
+    }
+}
+
+
+
 void updateFrame(GLFWwindow* window) {
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
     double timeDelta = getTimeDeltaSeconds();
+
+    processInput(window, timeDelta);
+
 
     const float ballBottomY = boxNode->position.y - (boxDimensions.y / 2) + ballRadius + padDimensions.y;
     const float ballTopY = boxNode->position.y + (boxDimensions.y / 2) - ballRadius;
@@ -416,7 +467,7 @@ void updateFrame(GLFWwindow* window) {
 
     glm::mat4 projection = glm::perspective(glm::radians(80.0f), float(windowWidth) / float(windowHeight), 0.1f, 350.f);
 
-    glm::vec3 cameraPosition = glm::vec3(0, 2, -20);
+
 
     // Some math to make the camera move in a nice way
     float lookRotation = -0.6 / (1 + exp(-5 * (padPositionX - 0.5))) + 0.3;
@@ -424,6 +475,12 @@ void updateFrame(GLFWwindow* window) {
         glm::rotate(0.3f + 0.2f * float(-padPositionZ * padPositionZ), glm::vec3(1, 0, 0)) *
         glm::rotate(lookRotation, glm::vec3(0, 1, 0)) *
         glm::translate(-cameraPosition);
+    glm::mat4 camera = glm::mat4(
+        1.0, 0.0, 0.0, -cameraPosition.x,
+        0.0, 1.0, 0.0, -cameraPosition.y,
+        0.0, 0.0, 1.0, -cameraPosition.z,// higher minus x = longer away
+        0.0, 0.0, 0.0, 1.0
+        );
 
     glm::mat4 P = projection ;
     glm::mat4 V = cameraTransform;
