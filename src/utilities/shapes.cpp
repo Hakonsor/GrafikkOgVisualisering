@@ -1,5 +1,6 @@
 #include <iostream>
 #include "shapes.h"
+#include <array>
 
 #ifndef M_PI
 #define M_PI 3.14159265359f
@@ -90,10 +91,10 @@ Mesh cube(glm::vec3 scale, glm::vec2 textureScale, bool tilingTextures, bool inv
     return m;
 }
 
-Mesh sphereCube(glm::vec3 scale, glm::vec2 textureScale, bool tilingTextures, bool inverted, glm::vec3 textureScale3d, float radius ) {
+Mesh sphereCube(glm::vec3 scale, glm::vec2 textureScale, bool tilingTextures, bool inverted, glm::vec3 textureScale3d, float radius) {
     glm::vec3 points[8];
     int indices[36];
-
+    std::array<int, 6> lodPerFace = {20, 20, 20, 20, 20, 20};
     for (int y = 0; y <= 1; y++)
         for (int z = 0; z <= 1; z++)
             for (int x = 0; x <= 1; x++) {
@@ -137,45 +138,82 @@ Mesh sphereCube(glm::vec3 scale, glm::vec2 textureScale, bool tilingTextures, bo
 
     Mesh m;
     for (int face = 0; face < 6; face++) {
-        int offset = face * 6;
-        indices[offset + 0] = faces[face][0];
-        indices[offset + 3] = faces[face][0];
+        int lod = lodPerFace[face];
+        float step = 1.0f / lod;
+        printf("\n Side:%d, lod:%f  ", face, lod);
+        for (float row = 0; row < lod; ++row) {
+            for (float col = 0; col < lod; ++col) {
+                glm::vec3 quadPoints[4];
+                printf("\n rad:%d, col:%d ", row, col);
+                for (int y = 0; y <= 1; y++)
+                    for (int x = 0; x <= 1; x++) {
+                        int idx = x + y * 2;
+                        glm::vec3 topLeft = points[faces[face][0]];
+                        glm::vec3 topRight = points[faces[face][1]];
+                        glm::vec3 bottomLeft = points[faces[face][2]];
+                        glm::vec3 bottomRight = points[faces[face][3]];
 
-        if (!inverted) {
-            indices[offset + 1] = faces[face][3];
-            indices[offset + 2] = faces[face][1];
-            indices[offset + 4] = faces[face][2];
-            indices[offset + 5] = faces[face][3];
-        }
-        else {
-            indices[offset + 1] = faces[face][1];
-            indices[offset + 2] = faces[face][3];
-            indices[offset + 4] = faces[face][3];
-            indices[offset + 5] = faces[face][2];
-        }
+                        float u = x * step + col * step;
+                        float v = y * step + row * step;
 
-        for (int i = 0; i < 6; i++) {
-            glm::vec3 vertex = points[indices[offset + i]];
-            vertex = glm::normalize(vertex) * radius;
+                        glm::vec3 top = glm::mix(topLeft, topRight, u);
+                        glm::vec3 bottom = glm::mix(bottomLeft, bottomRight, u);
+                        glm::vec3 point = glm::mix(top, bottom, v);
 
-            m.vertices.push_back(vertex);
-            m.indices.push_back(offset + i);
-            m.normals.push_back(normals[face] * (inverted ? -1.f : 1.f));
-        }
+                        glm::vec3 sphericalPoint = glm::normalize(point) * radius; // Normalize and scale by radius
+                        quadPoints[idx] = sphericalPoint; // Directly use the sphericalPoint
+                        printf(" (%g, %g) ", point.x, point.y);
+                    }
+                //for (int y = 0; y <= 1; y++)
+                //    for (int x = 0; x <= 1; x++) {
+                //        int idx = x + y * 2;
+                //        glm::vec3 point = points[faces[face][idx]];
+                //        // 15 = 15 + (0.5 * 1 * 1) = 15.5
 
-        glm::vec2 textureScaleFactor = tilingTextures ? (faceScale[face] / textureScale) : glm::vec2(1);
+                //        point.x += step * col;
+                //        point.y += step * row;
+                //        glm::vec3 sphericalPoint = glm::normalize(point) * radius; // Normalize and scale by radius
+                //        quadPoints[idx] = sphericalPoint; // Directly use the sphericalPoint
+                //        printf(" (%g, %g) ", point.x, point.y);
+                //    }
 
-        if (!inverted) {
-            for (int i : {1, 2, 3, 1, 0, 2}) {
-                m.textureCoordinates.push_back(UVs[i] * textureScaleFactor);
-            }
-        }
-        else {
-            for (int i : {3, 1, 0, 3, 0, 2}) {
-                m.textureCoordinates.push_back(UVs[i] * textureScaleFactor);
+
+
+                // Calculate the offset for each quad
+                int offset = m.vertices.size();
+
+                // Add vertices and indices
+                for (int i = 0; i < 4; ++i) {
+                    glm::vec3 vertex = quadPoints[i];
+                    m.vertices.push_back(vertex);
+                    m.normals.push_back(normals[face] * (inverted ? -1.f : 1.f));
+                }
+
+                if (!inverted) {
+                    m.indices.push_back(offset + 0);
+                    m.indices.push_back(offset + 2);
+                    m.indices.push_back(offset + 1);
+                    m.indices.push_back(offset + 2);
+                    m.indices.push_back(offset + 3);
+                    m.indices.push_back(offset + 1);
+                }
+                else {
+                    m.indices.push_back(offset + 0);
+                    m.indices.push_back(offset + 1);
+                    m.indices.push_back(offset + 2);
+                    m.indices.push_back(offset + 2);
+                    m.indices.push_back(offset + 1);
+                    m.indices.push_back(offset + 3);
+                }
+
+                glm::vec2 textureScaleFactor = tilingTextures ? (faceScale[face] / textureScale) : glm::vec2(1);
+                for (int i : {0, 2, 1, 2, 3, 1}) {
+                    m.textureCoordinates.push_back(UVs[i] * textureScaleFactor);
+                }
             }
         }
     }
+
 
     return m;
 }

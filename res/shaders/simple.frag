@@ -26,7 +26,7 @@ float dither(vec2 uv) { return (rand(uv)*2.0-1.0) / 256.0; }
 
 float diffuse_reflekton = 0.6;
 // Task 1 f)
-float ambient = 0.0;
+float ambient = 0.2;
 float shininessVal = 32;
 vec3 lightSpecular;
 
