@@ -97,6 +97,9 @@ unsigned int GetLoadedImage(PNGImage texture) {
     return textureid;
 }
 
+float distance(glm::vec3 point1, glm::vec3 point2) {
+    return glm::length(point2 - point1);
+}
 
 // Modify if you want the music to start further on in the track. Measured in seconds.
 const float debug_startTime = 0;
@@ -154,7 +157,8 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
 
     // Create meshes
     //Mesh pad = cube(padDimensions, glm::vec2(30, 30), true);
-    Mesh pad = sphereCube(padDimensions, glm::vec2(30, 30), true, false, glm::vec3(1), 10.0);
+    
+    Mesh pad = sphereCube(padDimensions, glm::vec2(30, 30), true, false, glm::vec3(1), 10.0, cameraPosition);
 
     Mesh box = cube(boxDimensions, glm::vec2(900), true, true);
     Mesh sphere = generateSphere(1.0, 40, 40);
@@ -298,6 +302,19 @@ void updateFrame(GLFWwindow* window) {
     double timeDelta = getTimeDeltaSeconds();
 
     processInput(window, timeDelta);
+
+    float cameraPadDistance = distance(cameraPosition, padNode->position);
+
+    // Update sphereCube if distance is below a certain threshold (e.g. 30.0f)
+    if (cameraPadDistance < 30.0f) {
+        // Create a new sphereCube with updated properties
+        Mesh newPad = sphereCube(padDimensions, glm::vec2(30, 30), true, false, glm::vec3(1), 10.0, cameraPosition);
+
+        // Update padNode's vertexArrayObjectID and VAOIndexCount
+        unsigned int newPadVAO = generateBuffer(newPad);
+        padNode->vertexArrayObjectID = newPadVAO;
+        padNode->VAOIndexCount = newPad.indices.size();
+    }
 
     // Set up camera
     glm::vec3 camera_position = cameraPosition;

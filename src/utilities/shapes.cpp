@@ -91,10 +91,11 @@ Mesh cube(glm::vec3 scale, glm::vec2 textureScale, bool tilingTextures, bool inv
     return m;
 }
 
-Mesh sphereCube(glm::vec3 scale, glm::vec2 textureScale, bool tilingTextures, bool inverted, glm::vec3 textureScale3d, float radius) {
+Mesh sphereCube(glm::vec3 scale, glm::vec2 textureScale, bool tilingTextures, bool inverted, glm::vec3 textureScale3d, float radius, glm::vec3 cameraPosition) {
     glm::vec3 points[8];
     int indices[36];
-    std::array<int, 6> lodPerFace = {20, 20, 20, 20, 20, 20};
+    //std::array<int, 6> lodPerFace = {20, 20, 20, 20, 20, 20};
+    std::array<int, 6> lodPerFace;
     for (int y = 0; y <= 1; y++)
         for (int z = 0; z <= 1; z++)
             for (int x = 0; x <= 1; x++) {
@@ -136,8 +137,26 @@ Mesh sphereCube(glm::vec3 scale, glm::vec2 textureScale, bool tilingTextures, bo
         {1, 1},
     };
 
+    float distanceThreshold = 30.0f;
+
     Mesh m;
     for (int face = 0; face < 6; face++) {
+        // Calculate the face center
+        glm::vec3 faceCenter = (points[faces[face][0]] + points[faces[face][1]] + points[faces[face][2]] + points[faces[face][3]]) * 0.25f;
+        glm::vec3 sphericalCenter = glm::normalize(faceCenter) * radius;
+
+        // Calculate the distance from the camera to the face center
+        float distance = glm::distance(cameraPosition, sphericalCenter);
+
+        // Update the LOD value based on the distance
+        if (distance < distanceThreshold) {
+            lodPerFace[face] = 4; // Higher LOD for closer faces
+        }
+        else {
+            lodPerFace[face] = 1; // Lower LOD for farther faces
+        }
+
+
         int lod = lodPerFace[face];
         float step = 1.0f / lod;
         printf("\n Side:%d, lod:%f  ", face, lod);
