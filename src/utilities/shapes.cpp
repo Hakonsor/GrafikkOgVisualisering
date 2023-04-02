@@ -1,10 +1,11 @@
 #include <iostream>
 #include "shapes.h"
 #include <array>
-
+#include <map>
 #ifndef M_PI
 #define M_PI 3.14159265359f
 #endif
+
 
 Mesh cube(glm::vec3 scale, glm::vec2 textureScale, bool tilingTextures, bool inverted, glm::vec3 textureScale3d) {
     glm::vec3 points[8];
@@ -95,7 +96,7 @@ Mesh sphereCube(glm::vec3 scale, glm::vec2 textureScale, bool tilingTextures, bo
     glm::vec3 points[8];
     int indices[36];
     //std::array<int, 6> lodPerFace = {20, 20, 20, 20, 20, 20};
-    std::array<int, 6> lodPerFace;
+    //std::array<std::array<int, 2>, 6> lodPerFace;
     for (int y = 0; y <= 1; y++)
         for (int z = 0; z <= 1; z++)
             for (int x = 0; x <= 1; x++) {
@@ -137,33 +138,32 @@ Mesh sphereCube(glm::vec3 scale, glm::vec2 textureScale, bool tilingTextures, bo
         {1, 1},
     };
 
-    float distanceThreshold = 30.0f;
+    float minDistanceThreshold = 5.0f;
+    float maxDistanceThreshold = 100.0f;
+    int minLod = 1;
+    int maxLod = 30;
 
+    // TODO drop face/faces on oppesit side of camera 
     Mesh m;
     for (int face = 0; face < 6; face++) {
         // Calculate the face center
+
         glm::vec3 faceCenter = (points[faces[face][0]] + points[faces[face][1]] + points[faces[face][2]] + points[faces[face][3]]) * 0.25f;
         glm::vec3 sphericalCenter = glm::normalize(faceCenter) * radius;
 
         // Calculate the distance from the camera to the face center
         float distance = glm::distance(cameraPosition, sphericalCenter);
 
-        // Update the LOD value based on the distance
-        if (distance < distanceThreshold) {
-            lodPerFace[face] = 4; // Higher LOD for closer faces
-        }
-        else {
-            lodPerFace[face] = 1; // Lower LOD for farther faces
-        }
+        float normalizedDistance = (distance - minDistanceThreshold) / (maxDistanceThreshold - minDistanceThreshold);
+        normalizedDistance = 1.0f - glm::clamp(normalizedDistance, 0.0f, 1.0f);
 
+        int lod = minLod + (int)(normalizedDistance * (maxLod - minLod));
 
-        int lod = lodPerFace[face];
         float step = 1.0f / lod;
-        printf("\n Side:%d, lod:%f  ", face, lod);
-        for (float row = 0; row < lod; ++row) {
-            for (float col = 0; col < lod; ++col) {
+        for (int row = 0; row < lod; ++row) {
+            for (int col = 0; col < lod; ++col) {
                 glm::vec3 quadPoints[4];
-                printf("\n rad:%d, col:%d ", row, col);
+
                 for (int y = 0; y <= 1; y++)
                     for (int x = 0; x <= 1; x++) {
                         int idx = x + y * 2;
@@ -181,27 +181,13 @@ Mesh sphereCube(glm::vec3 scale, glm::vec2 textureScale, bool tilingTextures, bo
 
                         glm::vec3 sphericalPoint = glm::normalize(point) * radius; // Normalize and scale by radius
                         quadPoints[idx] = sphericalPoint; // Directly use the sphericalPoint
-                        printf(" (%g, %g) ", point.x, point.y);
+                        
                     }
-                //for (int y = 0; y <= 1; y++)
-                //    for (int x = 0; x <= 1; x++) {
-                //        int idx = x + y * 2;
-                //        glm::vec3 point = points[faces[face][idx]];
-                //        // 15 = 15 + (0.5 * 1 * 1) = 15.5
 
-                //        point.x += step * col;
-                //        point.y += step * row;
-                //        glm::vec3 sphericalPoint = glm::normalize(point) * radius; // Normalize and scale by radius
-                //        quadPoints[idx] = sphericalPoint; // Directly use the sphericalPoint
-                //        printf(" (%g, %g) ", point.x, point.y);
-                //    }
-
-
-
-                // Calculate the offset for each quad
                 int offset = m.vertices.size();
+                
 
-                // Add vertices and indices
+                
                 for (int i = 0; i < 4; ++i) {
                     glm::vec3 vertex = quadPoints[i];
                     m.vertices.push_back(vertex);
@@ -232,7 +218,6 @@ Mesh sphereCube(glm::vec3 scale, glm::vec2 textureScale, bool tilingTextures, bo
             }
         }
     }
-
 
     return m;
 }

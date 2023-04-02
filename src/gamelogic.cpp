@@ -294,7 +294,8 @@ void processInput(GLFWwindow* window,float timeDelta) {
     }
 }
 
-
+bool change = false;
+bool change1 = false;
 
 void updateFrame(GLFWwindow* window) {
 
@@ -306,15 +307,24 @@ void updateFrame(GLFWwindow* window) {
     float cameraPadDistance = distance(cameraPosition, padNode->position);
 
     // Update sphereCube if distance is below a certain threshold (e.g. 30.0f)
-    if (cameraPadDistance < 30.0f) {
+    
+    if (cameraPadDistance < 40.0f ) {
+        //printf("distance: %g\n", cameraPadDistance);
         // Create a new sphereCube with updated properties
         Mesh newPad = sphereCube(padDimensions, glm::vec2(30, 30), true, false, glm::vec3(1), 10.0, cameraPosition);
 
         // Update padNode's vertexArrayObjectID and VAOIndexCount
+        std::cout << "Vertices size: " << newPad.vertices.size() << std::endl;
+        std::cout << "Normals size: " << newPad.normals.size() << std::endl;
+        std::cout << "TextureCoordinates size: " << newPad.textureCoordinates.size() << std::endl;
+        std::cout << "Indices size: " << newPad.indices.size() << std::endl;
         unsigned int newPadVAO = generateBuffer(newPad);
+        printf("id:%d ", newPadVAO);
         padNode->vertexArrayObjectID = newPadVAO;
         padNode->VAOIndexCount = newPad.indices.size();
+        change = true;
     }
+
 
     // Set up camera
     glm::vec3 camera_position = cameraPosition;

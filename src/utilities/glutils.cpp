@@ -2,6 +2,7 @@
 #include <program.hpp>
 #include "glutils.h"
 #include <vector>
+#include <iostream>
 
 template <class T>
 unsigned int generateAttribute(int id, int elementsPerEntry, std::vector<T> data, bool normalize) {
@@ -23,6 +24,7 @@ void computeTangentBasis(
     std::vector<glm::vec3>& tangents,
     std::vector<glm::vec3>& bitangents
 ) {
+
     /*For each triangle, we compute the edge(deltaPos) and the deltaUV*/
     for (int i = 0; i < vertices.size(); i += 3) {
 
@@ -69,6 +71,9 @@ void computeTangentBasis(
 
 unsigned int generateBuffer(Mesh &mesh) {
 
+
+    
+
     unsigned int vaoID;
     glGenVertexArrays(1, &vaoID);
     glBindVertexArray(vaoID);
@@ -83,10 +88,16 @@ unsigned int generateBuffer(Mesh &mesh) {
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBufferID);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, mesh.indices.size() * sizeof(unsigned int), mesh.indices.data(), GL_STATIC_DRAW);
     
-    if (mesh.normals.size() > 0) {
+    if (mesh.normals.size() > 0 && mesh.vertices.size() % 3 == 0) {
         computeTangentBasis(
             mesh.vertices, mesh.textureCoordinates, mesh.normals,
             mesh.tangent, mesh.bitangent);
+        std::cout << "2Vertices size: " << mesh.vertices.size() << std::endl;
+        std::cout << "2UVs size: " << mesh.textureCoordinates.size() << std::endl;
+        std::cout << "2Normals size: " << mesh.normals.size() << std::endl;
+         
+        std::cout << "2Tangents size: " << mesh.tangent.size() << std::endl;
+        std::cout << "2Bitangents size: " << mesh.bitangent.size() << std::endl;
 
         GLuint tangentbuffer;
         glGenBuffers(1, &tangentbuffer);
@@ -100,6 +111,10 @@ unsigned int generateBuffer(Mesh &mesh) {
         glBufferData(GL_ARRAY_BUFFER, mesh.bitangent.size() * sizeof(glm::vec3), &mesh.bitangent[0], GL_STATIC_DRAW);
         generateAttribute(4, 3, mesh.bitangent, false);
     }
+
+    //assert(mesh.vertices.size() == mesh.normals.size());
+    //assert(mesh.vertices.size() == mesh.textureCoordinates.size());
+    //assert(mesh.indices.size() % 3 == 0);
     return vaoID;
 }
 
