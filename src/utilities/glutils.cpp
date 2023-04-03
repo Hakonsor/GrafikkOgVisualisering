@@ -3,6 +3,7 @@
 #include "glutils.h"
 #include <vector>
 #include <iostream>
+#include <sceneGraph.hpp>
 
 template <class T>
 unsigned int generateAttribute(int id, int elementsPerEntry, std::vector<T> data, bool normalize) {
@@ -69,35 +70,31 @@ void computeTangentBasis(
     }
 }
 
-unsigned int generateBuffer(Mesh &mesh) {
-
-
-    
+void generateBufferWhitNode(Mesh &mesh, SceneNode &node) {
 
     unsigned int vaoID;
     glGenVertexArrays(1, &vaoID);
     glBindVertexArray(vaoID);
-    generateAttribute(0, 3, mesh.vertices, false);
+    node.vertexBufferID = generateAttribute(0, 3, mesh.vertices, false);
     generateAttribute(1, 3, mesh.normals, true);
     if (mesh.textureCoordinates.size() > 0) {
         generateAttribute(2, 2, mesh.textureCoordinates, false);
     }
 
+    node.vertexArrayObjectID = vaoID;
+    node.VAOIndexCount = mesh.indices.size();
+
     unsigned int indexBufferID;
     glGenBuffers(1, &indexBufferID);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBufferID);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, mesh.indices.size() * sizeof(unsigned int), mesh.indices.data(), GL_STATIC_DRAW);
+
     
-    if (mesh.normals.size() > 0 && mesh.vertices.size() % 3 == 0) {
+    
+    if (mesh.normals.size() > 0 ) {
         computeTangentBasis(
             mesh.vertices, mesh.textureCoordinates, mesh.normals,
             mesh.tangent, mesh.bitangent);
-        std::cout << "2Vertices size: " << mesh.vertices.size() << std::endl;
-        std::cout << "2UVs size: " << mesh.textureCoordinates.size() << std::endl;
-        std::cout << "2Normals size: " << mesh.normals.size() << std::endl;
-         
-        std::cout << "2Tangents size: " << mesh.tangent.size() << std::endl;
-        std::cout << "2Bitangents size: " << mesh.bitangent.size() << std::endl;
 
         GLuint tangentbuffer;
         glGenBuffers(1, &tangentbuffer);
@@ -112,12 +109,45 @@ unsigned int generateBuffer(Mesh &mesh) {
         generateAttribute(4, 3, mesh.bitangent, false);
     }
 
-    //assert(mesh.vertices.size() == mesh.normals.size());
-    //assert(mesh.vertices.size() == mesh.textureCoordinates.size());
-    //assert(mesh.indices.size() % 3 == 0);
-    return vaoID;
 }
 
+
+unsigned int generateBuffer(Mesh& mesh) {
+
+    unsigned int vaoID;
+    glGenVertexArrays(1, &vaoID);
+    glBindVertexArray(vaoID);
+    generateAttribute(0, 3, mesh.vertices, false);
+    generateAttribute(1, 3, mesh.normals, true);
+    if (mesh.textureCoordinates.size() > 0) {
+        generateAttribute(2, 2, mesh.textureCoordinates, false);
+    }
+
+    unsigned int indexBufferID;
+    glGenBuffers(1, &indexBufferID);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBufferID);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, mesh.indices.size() * sizeof(unsigned int), mesh.indices.data(), GL_STATIC_DRAW);
+
+    if (mesh.normals.size() > 0) {
+        computeTangentBasis(
+            mesh.vertices, mesh.textureCoordinates, mesh.normals,
+            mesh.tangent, mesh.bitangent);
+
+        GLuint tangentbuffer;
+        glGenBuffers(1, &tangentbuffer);
+        glBindBuffer(GL_ARRAY_BUFFER, tangentbuffer);
+        glBufferData(GL_ARRAY_BUFFER, mesh.tangent.size() * sizeof(glm::vec3), &mesh.tangent[0], GL_STATIC_DRAW);
+        generateAttribute(3, 3, mesh.tangent, false);
+
+        GLuint bitangentbuffer;
+        glGenBuffers(1, &bitangentbuffer);
+        glBindBuffer(GL_ARRAY_BUFFER, bitangentbuffer);
+        glBufferData(GL_ARRAY_BUFFER, mesh.bitangent.size() * sizeof(glm::vec3), &mesh.bitangent[0], GL_STATIC_DRAW);
+        generateAttribute(4, 3, mesh.bitangent, false);
+    }
+
+    return vaoID;
+}
 
 
     

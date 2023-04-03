@@ -112,6 +112,9 @@ double mouseSensitivity = 1.0;
 double lastMouseX = windowWidth / 2;
 double lastMouseY = windowHeight / 2;
 
+std::vector<glm::vec3> originalVertices;
+Mesh pad;
+
 void mouseCallback(GLFWwindow* window, double x, double y) {
     int windowWidth, windowHeight;
     glfwGetWindowSize(window, &windowWidth, &windowHeight);
@@ -160,8 +163,8 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     // Create meshes
     //Mesh pad = cube(padDimensions, glm::vec2(30, 30), true);
     
-    Mesh pad = sphereCube(padDimensions, glm::vec2(30, 30), true, false, glm::vec3(1), 10.0, cameraPosition);
-
+    pad = sphereCube(padDimensions, glm::vec2(30, 30), true, false, glm::vec3(1), 10.0, cameraPosition);
+    originalVertices = pad.vertices;
     Mesh box = cube(boxDimensions, glm::vec2(900), true, true);
     Mesh sphere = generateSphere(1.0, 40, 40);
     
@@ -169,7 +172,7 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     //unsigned int ballVAO = generateBuffer(sphere);
 
     unsigned int boxVAO  = generateBuffer(box);
-    unsigned int padVAO  = generateBuffer(pad);
+    //unsigned int padVAO  = generateBuffer(pad);
 
     int textureid = GetLoadedImage(ASCII);
     int normal = GetLoadedImage(ASCII);
@@ -184,6 +187,7 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     rootNode = createSceneNode();
     boxNode  = createSceneNode();
     padNode  = createSceneNode();
+    generateBufferWhitNode(pad, *padNode);
     ballNode = createSceneNode();
 
     textureNode = createSceneNode();
@@ -233,8 +237,8 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     boxNode->vertexArrayObjectID  = boxVAO;
     boxNode->VAOIndexCount        = box.indices.size();
 
-    padNode->vertexArrayObjectID  = padVAO;
-    padNode->VAOIndexCount        = pad.indices.size();
+    //padNode->vertexArrayObjectID  = padVAO;
+    //padNode->VAOIndexCount        = pad.indices.size();
 
     //ballNode->vertexArrayObjectID = ballVAO;
     //ballNode->VAOIndexCount       = sphere.indices.size();
@@ -247,6 +251,8 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     boxNode->textureID = GetLoadedImage(brick_diffuse);
     boxNode->textureNormal = GetLoadedImage(brick_normalmap);
     boxNode->textureRoughness = GetLoadedImage(brick03_rgh);
+
+    padNode->isDynamic = true;
     
     
     getTimeDeltaSeconds();
@@ -306,33 +312,12 @@ void updateFrame(GLFWwindow* window) {
 
     processInput(window, timeDelta);
 
-    float cameraPadDistance = distance(cameraPosition, padNode->position);
+    //float cameraPadDistance = distance(cameraPosition, padNode->position);
 
-    // Update sphereCube if distance is below a certain threshold (e.g. 30.0f)
-    
-    if (cameraPadDistance < 40.0f ) {
-        //printf("distance: %g\n", cameraPadDistance);
-        // Create a new sphereCube with updated properties
-        float noiseFactor = 0.1f;
-        Mesh newPad = sphereCube(padDimensions, glm::vec2(30, 30), true, false, glm::vec3(1), 10.0, cameraPosition);
-        for (int i = 0; i <= newPad.vertices.size()-1; i++) {
-            float noiseValue = SimplexNoise::noise(newPad.vertices[i].x, newPad.vertices[i].y, newPad.vertices[i].z);
-            newPad.vertices[i] = newPad.vertices[i] * (1.0f + noiseFactor * (noiseValue - 1.0f));
-        }
+   
+
+
         
-        
-        //std::cout << "Vertices size: " << newPad.vertices.size() << std::endl;
-        //std::cout << "Normals size: " << newPad.normals.size() << std::endl;
-        //std::cout << "TextureCoordinates size: " << newPad.textureCoordinates.size() << std::endl;
-        //std::cout << "Indices size: " << newPad.indices.size() << std::endl;
-        unsigned int newPadVAO = generateBuffer(newPad);
-        printf("id:%d ", newPadVAO);
-        padNode->vertexArrayObjectID = newPadVAO;
-        padNode->VAOIndexCount = newPad.indices.size();
-        change = true;
-    }
-
-
     // Set up camera
     glm::vec3 camera_position = cameraPosition;
     glm::vec3 camera_target(0.0f, 0.0f, -1.0f);
@@ -357,6 +342,8 @@ void updateFrame(GLFWwindow* window) {
 
     glm::mat4 identity = glm::mat4(model_matrix);
     updateNodeTransformations(rootNode, identity);
+
+
     glUniformMatrix4fv(4, 1, GL_FALSE, glm::value_ptr(P));
     glUniformMatrix4fv(5, 1, GL_FALSE, glm::value_ptr(V));
     glUniform3f(9, cameraPosition.x, cameraPosition.y, cameraPosition.z);
@@ -379,6 +366,8 @@ void updateNodeTransformations(SceneNode* node, glm::mat4 transformationThusFar)
 
     switch (node->nodeType) {
     case GEOMETRY:
+
+
         if (node->id == 10) {
             // Send position of ball
             glm::vec3 shadow = node->currentTransformationMatrix * glm::vec4(0, 0, 0, 1);
@@ -419,15 +408,31 @@ void renderNode(SceneNode* node) {
     glm::mat3 normalmatrix = glm::transpose(glm::inverse(node->currentTransformationMatrix));
     // Task 1 b)
     glUniformMatrix3fv(13, 1, GL_FALSE, glm::value_ptr(normalmatrix));
+   
 
     switch(node->nodeType) {
-        case GEOMETRY:
-            if(node->vertexArrayObjectID != -1) {
-                glUniform1i(6, 0);
-                glBindVertexArray(node->vertexArrayObjectID);
-                glDrawElements(GL_TRIANGLES, node->VAOIndexCount, GL_UNSIGNED_INT, nullptr);
+
+    case GEOMETRY:
+        if (node->vertexArrayObjectID == padNode->vertexArrayObjectID) {
+            double timeDelta = getTimeDeltaSeconds();
+            float frequency = 22.2f; // Increase or decrease the frequency of the sine wave
+            float amplitude = 200.0f; // Increase or decrease the amplitude of the sine wave
+            float noiseFactor = 0.02f + (sin(timeDelta * frequency) * amplitude);
+            for (size_t i = 0; i < originalVertices.size() - 1; ++i) {
+                float noiseValue = SimplexNoise::noise(originalVertices[i].x, originalVertices[i].y, originalVertices[i].z);
+                pad.vertices[i] = originalVertices[i] * 1.0f * (1.0f + noiseFactor * (noiseValue - 1.0f));
             }
-            break;
+            glBindBuffer(GL_ARRAY_BUFFER, node->vertexBufferID);
+            glBufferData(GL_ARRAY_BUFFER, pad.vertices.size() * sizeof(glm::vec3), pad.vertices.data(), GL_STATIC_DRAW);
+
+        }
+        if (node->vertexArrayObjectID != -1) {
+
+            glUniform1i(6, 0);
+            glBindVertexArray(node->vertexArrayObjectID);
+            glDrawElements(GL_TRIANGLES, node->VAOIndexCount, GL_UNSIGNED_INT, nullptr);
+        }
+        break;
         case POINT_LIGHT: 
 
             

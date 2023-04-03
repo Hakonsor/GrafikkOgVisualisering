@@ -1,4 +1,5 @@
 #version 430 core
+
 struct Lights {
     vec3 position;
     vec3 color;
@@ -73,7 +74,6 @@ float map(float value, float min1, float max1, float min2, float max2) {
 
 void main()
 {
-    
     float dilter = dither(textureCoordinates);
     vec3 normal; 
     if (normal_geo == 1) {

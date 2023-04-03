@@ -55,12 +55,14 @@ struct SceneNode {
 	//
 	//
 	int vertexArrayObjectID;
+	int vertexBufferID;
+	int indexBufferID;
 	unsigned int VAOIndexCount;
 	unsigned int textureID;
 	unsigned int textureNormal;
 	unsigned int textureRoughness;
 	int id;
-
+	bool isDynamic;
 	glm::vec3 color;
 	// Node type is used to determine how to handle the contents of a node
 	SceneNodeType nodeType;

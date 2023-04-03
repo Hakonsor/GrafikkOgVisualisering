@@ -5,6 +5,7 @@
 #ifndef M_PI
 #define M_PI 3.14159265359f
 #endif
+#include "../../build/SimplexNoise.h"
 
 
 Mesh cube(glm::vec3 scale, glm::vec2 textureScale, bool tilingTextures, bool inverted, glm::vec3 textureScale3d) {
@@ -92,6 +93,13 @@ Mesh cube(glm::vec3 scale, glm::vec2 textureScale, bool tilingTextures, bool inv
     return m;
 }
 
+glm::vec3 calculateNormal(const glm::vec3& v1, const glm::vec3& v2, const glm::vec3& v3) {
+    glm::vec3 edge1 = v2 - v1;
+    glm::vec3 edge2 = v3 - v1;
+    glm::vec3 normal = glm::cross(edge1, edge2);
+    return glm::normalize(normal);
+}
+
 Mesh sphereCube(glm::vec3 scale, glm::vec2 textureScale, bool tilingTextures, bool inverted, glm::vec3 textureScale3d, float radius, glm::vec3 cameraPosition) {
     glm::vec3 points[8];
     int indices[36];
@@ -142,24 +150,26 @@ Mesh sphereCube(glm::vec3 scale, glm::vec2 textureScale, bool tilingTextures, bo
     float maxDistanceThreshold = 100.0f;
     int minLod = 1;
     int maxLod = 30;
-
+    float noiseFactor = 0.1;
     // TODO drop face/faces on oppesit side of camera 
     Mesh m;
     for (int face = 0; face < 6; face++) {
         // Calculate the face center
 
-        glm::vec3 faceCenter = (points[faces[face][0]] + points[faces[face][1]] + points[faces[face][2]] + points[faces[face][3]]) * 0.25f;
-        glm::vec3 sphericalCenter = glm::normalize(faceCenter) * radius;
+        //glm::vec3 faceCenter = (points[faces[face][0]] + points[faces[face][1]] + points[faces[face][2]] + points[faces[face][3]]) * 0.25f;
+        //glm::vec3 sphericalCenter = glm::normalize(faceCenter) * radius;
 
-        // Calculate the distance from the camera to the face center
-        float distance = glm::distance(cameraPosition, sphericalCenter);
+        //// Calculate the distance from the camera to the face center
+        //float distance = glm::distance(cameraPosition, sphericalCenter);
 
-        float normalizedDistance = (distance - minDistanceThreshold) / (maxDistanceThreshold - minDistanceThreshold);
-        normalizedDistance = 1.0f - glm::clamp(normalizedDistance, 0.0f, 1.0f);
+        //float normalizedDistance = (distance - minDistanceThreshold) / (maxDistanceThreshold - minDistanceThreshold);
+        //normalizedDistance = 1.0f - glm::clamp(normalizedDistance, 0.0f, 1.0f);
 
-        int lod = minLod + (int)(normalizedDistance * (maxLod - minLod));
-
+        int lod = 100;//minLod + (int)(normalizedDistance * (maxLod - minLod));
         float step = 1.0f / lod;
+        float noiseFactor =  0.09;
+        
+
         for (int row = 0; row < lod; ++row) {
             for (int col = 0; col < lod; ++col) {
                 glm::vec3 quadPoints[4];
@@ -179,19 +189,20 @@ Mesh sphereCube(glm::vec3 scale, glm::vec2 textureScale, bool tilingTextures, bo
                         glm::vec3 bottom = glm::mix(bottomLeft, bottomRight, u);
                         glm::vec3 point = glm::mix(top, bottom, v);
 
-                        glm::vec3 sphericalPoint = glm::normalize(point) * radius; // Normalize and scale by radius
+                        glm::vec3 sphericalPoint = glm::normalize(point); // Normalize and scale by radius
                         quadPoints[idx] = sphericalPoint; // Directly use the sphericalPoint
                         
                     }
 
                 int offset = m.vertices.size();
-                
 
-                
                 for (int i = 0; i < 4; ++i) {
-                    glm::vec3 vertex = quadPoints[i];
-                    m.vertices.push_back(vertex);
-                    m.normals.push_back(normals[face] * (inverted ? -1.f : 1.f));
+                        float noiseValue = SimplexNoise::noise(quadPoints[i].x, quadPoints[i].y, quadPoints[i].z);
+                        glm::vec3 vertex = quadPoints[i] * radius * (1.0f + noiseFactor * (noiseValue - 1.0f));
+                        m.vertices.push_back(vertex);
+                        glm::vec3 normal = calculateNormal(quadPoints[0], quadPoints[1], quadPoints[2]);
+                        if (inverted) normal = -normal;
+                        m.normals.push_back(normal);
                 }
 
                 if (!inverted) {

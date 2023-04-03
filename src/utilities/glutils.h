@@ -1,5 +1,7 @@
 #pragma once
 
 #include "mesh.h"
+#include "sceneGraph.hpp"
 
-unsigned int generateBuffer(Mesh &mesh);
+void generateBufferWhitNode(Mesh &mesh, SceneNode &node);
+unsigned int generateBuffer(Mesh &mesh); 
