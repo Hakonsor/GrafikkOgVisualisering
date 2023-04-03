@@ -20,12 +20,13 @@
 #include <conio.h>
 #include "utilities/imageLoader.hpp"
 #include "utilities/glfont.h"
-
+#include "SimplexNoise.h"
 enum KeyFrameAction {
     BOTTOM, TOP
 };
 
 #include <timestamps.h>
+
 
 double padPositionX = 0;
 double padPositionZ = 0;
@@ -59,6 +60,7 @@ Gloom::Shader* shader;
 Gloom::Shader* texture2dShader;
 Gloom::Shader* texture3dShader;
 sf::Sound* sound;
+SimplexNoise noise;
 
 const glm::vec3 boxDimensions(180, 90, 90);
 const glm::vec3 padDimensions(30, 30, 30);
@@ -175,7 +177,7 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     Mesh texture = generateTextGeometryBuffer(text, 39.0 / 29.0, 0.5);
     unsigned int textureVAO = generateBuffer(texture);
 
-
+    
 
 
     // Construct scene
@@ -311,13 +313,18 @@ void updateFrame(GLFWwindow* window) {
     if (cameraPadDistance < 40.0f ) {
         //printf("distance: %g\n", cameraPadDistance);
         // Create a new sphereCube with updated properties
+        float noiseFactor = 0.1f;
         Mesh newPad = sphereCube(padDimensions, glm::vec2(30, 30), true, false, glm::vec3(1), 10.0, cameraPosition);
-
-        // Update padNode's vertexArrayObjectID and VAOIndexCount
-        std::cout << "Vertices size: " << newPad.vertices.size() << std::endl;
-        std::cout << "Normals size: " << newPad.normals.size() << std::endl;
-        std::cout << "TextureCoordinates size: " << newPad.textureCoordinates.size() << std::endl;
-        std::cout << "Indices size: " << newPad.indices.size() << std::endl;
+        for (int i = 0; i <= newPad.vertices.size()-1; i++) {
+            float noiseValue = SimplexNoise::noise(newPad.vertices[i].x, newPad.vertices[i].y, newPad.vertices[i].z);
+            newPad.vertices[i] = newPad.vertices[i] * (1.0f + noiseFactor * (noiseValue - 1.0f));
+        }
+        
+        
+        //std::cout << "Vertices size: " << newPad.vertices.size() << std::endl;
+        //std::cout << "Normals size: " << newPad.normals.size() << std::endl;
+        //std::cout << "TextureCoordinates size: " << newPad.textureCoordinates.size() << std::endl;
+        //std::cout << "Indices size: " << newPad.indices.size() << std::endl;
         unsigned int newPadVAO = generateBuffer(newPad);
         printf("id:%d ", newPadVAO);
         padNode->vertexArrayObjectID = newPadVAO;
