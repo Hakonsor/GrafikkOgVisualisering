@@ -21,16 +21,45 @@
 #include "utilities/imageLoader.hpp"
 #include "utilities/glfont.h"
 #include "SimplexNoise.h"
+#include <omp.h>
 enum KeyFrameAction {
     BOTTOM, TOP
 };
 
 #include <timestamps.h>
 
+const int const_numberofnoiselayer = 2;
+struct NoiseSettings
+{
+    float strength = 1.0f;
+    float baseroughness = 1.0f;
+    float roughness = 2.0f;
+    float persistence = 0.54f;
+    int layers = 1;
+    glm::vec3 centre = glm::vec3(1);
+    float minValue = 0.0;
+    float maxValue = 0.0;
+    //Shapesettings
+};
+
+struct NoiseLayer {
+    bool enable = true;
+    bool useFisrtLayerAsMask = true;
+    NoiseSettings noiseSettings;
+};
+struct ShapeSettings
+{
+    float planetRaduis = 20.0f;
+    NoiseLayer noiselayer[const_numberofnoiselayer];
+    int numberofnoiselayer = const_numberofnoiselayer;
+};
+ShapeSettings shapeSettings;
+NoiseSettings noiseSettings;
+
 
 double padPositionX = 0;
 double padPositionZ = 0;
-
+bool change = true;
 unsigned int currentKeyFrame = 0;
 unsigned int previousKeyFrame = 0;
 
@@ -140,13 +169,71 @@ void mouseCallback(GLFWwindow* window, double x, double y) {
 // };
 // LightSource lightSources[/*Put number of light sources you want here*/];
 
+float evaluate(glm::vec3 point, NoiseSettings noiseSetting) {
+    glm::vec3 evaluate = point * noiseSetting.roughness + noiseSetting.centre;
+    float noiseValue = (SimplexNoise::noise(evaluate.x, evaluate.y, evaluate.z) + 1) * 0.5;
+    return noiseValue * noiseSetting.strength;
+}
+
+float Noisefilter(glm::vec3 point, NoiseSettings noiseSetting) {
+    float noiseValue = 0;
+    float frequency = noiseSetting.baseroughness;
+    float amplitude = 1;
+    for (int i = 0; i < noiseSetting.layers; i++) {
+        float v = evaluate(point * frequency + noiseSetting.centre, noiseSetting);
+        noiseValue += (v + 1) * 0.5f * amplitude;
+        frequency *= noiseSetting.roughness;
+        amplitude *= noiseSetting.persistence;
+    }
+    noiseValue = std::max(0.0f, noiseValue-noiseSetting.minValue);
+    return noiseValue * noiseSetting.strength;
+}
+
+float RidgidNoisefilter(glm::vec3 point, NoiseSettings noiseSetting) {
+    float noiseValue = 0;
+    float frequency = noiseSetting.baseroughness;
+    float amplitude = 1;
+    float weight = 1;
+    for (int i = 0; i < noiseSetting.layers; i++) {
+        float v = 1-std::abs(evaluate(point * frequency + noiseSetting.centre, noiseSetting));
+        v *= v;
+        v *= weight;
+        weight = v;
+        noiseValue += v * amplitude;
+        frequency *= noiseSetting.roughness;
+        amplitude *= noiseSetting.persistence;
+    }
+    noiseValue = std::max(0.0f, noiseValue - noiseSetting.minValue);
+    return noiseValue * noiseSetting.strength;
+}
+
+
 void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     buffer = new sf::SoundBuffer();
     if (!buffer->loadFromFile("../res/Hall of the Mountain King.ogg")) {
         return;
     }
 
- 
+    NoiseSettings noise = shapeSettings.noiselayer[0].noiseSettings;
+    noise.strength = 0.51f;
+    noise.baseroughness = 0.71f;
+    noise.roughness = 1.83f;
+    noise.persistence = 0.54f;
+    noise.layers = 5;
+    noise.centre = glm::vec3(1);
+    noise.minValue = 1.35409;
+    shapeSettings.noiselayer[0].noiseSettings = noise;
+
+    noise = shapeSettings.noiselayer[1].noiseSettings;
+    noise.strength = 0.80f; // 0.80;
+    noise.baseroughness = 1.08f;
+    noise.roughness = 1.92717;
+    noise.persistence = 0.54f;
+    noise.layers = 5;
+    noise.centre = glm::vec3(1);
+    noise.minValue = 1.62409;
+    shapeSettings.noiselayer[1].noiseSettings = noise;
+    //printf(" settings:%g ", shapeSettings.noiseSettings.strength);
     options = gameOptions;
 
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
@@ -252,6 +339,8 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     boxNode->textureNormal = GetLoadedImage(brick_normalmap);
     boxNode->textureRoughness = GetLoadedImage(brick03_rgh);
 
+    padNode->textureID = GetLoadedImage(brick_diffuse);
+
     padNode->isDynamic = true;
     
     
@@ -300,9 +389,59 @@ void processInput(GLFWwindow* window,float timeDelta) {
     if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS) {
         rotasjonfloat -= timeDelta;
     }
+
+    if (glfwGetKey(window, GLFW_KEY_T) == GLFW_PRESS) {
+        shapeSettings.noiselayer[0].noiseSettings.minValue -= timeDelta;
+        change = true;
+        printf("\nminvalue: %g", shapeSettings.noiselayer[0].noiseSettings.minValue);
+    }
+    if (glfwGetKey(window, GLFW_KEY_Y) == GLFW_PRESS) {
+        shapeSettings.noiselayer[0].noiseSettings.minValue += timeDelta;
+        change = true;
+        printf("\nminvalue: %g", shapeSettings.noiselayer[0].noiseSettings.minValue);
+    }
+    if (glfwGetKey(window, GLFW_KEY_G) == GLFW_PRESS) {
+        shapeSettings.noiselayer[0].noiseSettings.roughness -= (timeDelta);
+        change = true;
+        printf("\nroughness: %g", shapeSettings.noiselayer[0].noiseSettings.roughness);
+    }
+    if (glfwGetKey(window, GLFW_KEY_H) == GLFW_PRESS) {
+        shapeSettings.noiselayer[0].noiseSettings.roughness += (timeDelta);
+        change = true;
+        printf("\nroughness: %g", shapeSettings.noiselayer[0].noiseSettings.roughness);
+    }
+
+    if (glfwGetKey(window, GLFW_KEY_U) == GLFW_PRESS) {
+        shapeSettings.noiselayer[0].noiseSettings.persistence -= (timeDelta);
+        change = true;
+        printf("\npersistence: %g", shapeSettings.noiselayer[0].noiseSettings.persistence);
+    }
+    if (glfwGetKey(window, GLFW_KEY_I) == GLFW_PRESS) {
+        shapeSettings.noiselayer[0].noiseSettings.persistence += (timeDelta);
+        change = true;
+        printf("\npersistence: %g", shapeSettings.noiselayer[0].noiseSettings.persistence);
+    }
+
+
+    if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS) {
+        shapeSettings.noiselayer[0].enable = !shapeSettings.noiselayer[0].enable;
+        change = true;
+        printf("\n1 off: %B", shapeSettings.noiselayer[0].enable);
+    }
+
+    if (glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS) {
+        shapeSettings.noiselayer[1].enable = !shapeSettings.noiselayer[1].enable;
+        change = true;
+        printf("\n2 off: %B", shapeSettings.noiselayer[1].enable);
+    }
+
+    //if (glfwGetKey(window, GLFW_KEY_3) == GLFW_PRESS) {
+    //    noiseSettings.maxValue += (timeDelta / 10);
+    //    printf("\nmaxvalue: %g", noiseSettings.maxValue);
+    //}
 }
 
-bool change = false;
+
 bool change1 = false;
 
 void updateFrame(GLFWwindow* window) {
@@ -313,11 +452,7 @@ void updateFrame(GLFWwindow* window) {
     processInput(window, timeDelta);
 
     //float cameraPadDistance = distance(cameraPosition, padNode->position);
-
-   
-
-
-        
+  
     // Set up camera
     glm::vec3 camera_position = cameraPosition;
     glm::vec3 camera_target(0.0f, 0.0f, -1.0f);
@@ -335,34 +470,34 @@ void updateFrame(GLFWwindow* window) {
     model_matrix = glm::rotate(model_matrix, rotasjonfloat, glm::vec3(0.0f, 1.0f, 0.0f));
     model_matrix = glm::rotate(model_matrix, rotasjonupanddown, glm::vec3(1.0f, 0.0f, 0.0f));
 
-    // Set up matrices for rendering
-    glm::mat4 P = projection_matrix;
-    glm::mat4 V = view_matrix;
-    glm::mat4 M = model_matrix;
+// Set up matrices for rendering
+glm::mat4 P = projection_matrix;
+glm::mat4 V = view_matrix;
+glm::mat4 M = model_matrix;
 
-    glm::mat4 identity = glm::mat4(model_matrix);
-    updateNodeTransformations(rootNode, identity);
+glm::mat4 identity = glm::mat4(model_matrix);
+updateNodeTransformations(rootNode, identity);
 
 
-    glUniformMatrix4fv(4, 1, GL_FALSE, glm::value_ptr(P));
-    glUniformMatrix4fv(5, 1, GL_FALSE, glm::value_ptr(V));
-    glUniform3f(9, cameraPosition.x, cameraPosition.y, cameraPosition.z);
+glUniformMatrix4fv(4, 1, GL_FALSE, glm::value_ptr(P));
+glUniformMatrix4fv(5, 1, GL_FALSE, glm::value_ptr(V));
+glUniform3f(9, cameraPosition.x, cameraPosition.y, cameraPosition.z);
 
 }
 
 void updateNodeTransformations(SceneNode* node, glm::mat4 transformationThusFar) {
     glm::mat4 transformationMatrix =
-              glm::translate(node->position)
-            * glm::translate(node->referencePoint)
-            * glm::rotate(node->rotation.y, glm::vec3(0,1,0))
-            * glm::rotate(node->rotation.x, glm::vec3(1,0,0))
-            * glm::rotate(node->rotation.z, glm::vec3(0,0,1))
-            * glm::scale(node->scale)
-            * glm::translate(-node->referencePoint);
+        glm::translate(node->position)
+        * glm::translate(node->referencePoint)
+        * glm::rotate(node->rotation.y, glm::vec3(0, 1, 0))
+        * glm::rotate(node->rotation.x, glm::vec3(1, 0, 0))
+        * glm::rotate(node->rotation.z, glm::vec3(0, 0, 1))
+        * glm::scale(node->scale)
+        * glm::translate(-node->referencePoint);
 
     node->currentTransformationMatrix = transformationThusFar * transformationMatrix;
 
-   
+
 
     switch (node->nodeType) {
     case GEOMETRY:
@@ -383,48 +518,86 @@ void updateNodeTransformations(SceneNode* node, glm::mat4 transformationThusFar)
         glUniform3f(location, light.x, light.y, light.z);
         glUniform3f(colorlocation, node->color.x, node->color.y, node->color.z);
         break;
-        }
+    }
     case SPOT_LIGHT: break;
     case GEOMETRY2D: {
-
-       
-        
         break;
-        
-    }
 
     }
 
-    for(SceneNode* child : node->children) {
+    }
+
+    for (SceneNode* child : node->children) {
         updateNodeTransformations(child, node->currentTransformationMatrix);
     }
 }
 
 void renderNode(SceneNode* node) {
-    
+
 
     glUniformMatrix4fv(3, 1, GL_FALSE, glm::value_ptr(node->currentTransformationMatrix));
     // Task 1 c)
     glm::mat3 normalmatrix = glm::transpose(glm::inverse(node->currentTransformationMatrix));
     // Task 1 b)
     glUniformMatrix3fv(13, 1, GL_FALSE, glm::value_ptr(normalmatrix));
-   
 
-    switch(node->nodeType) {
+
+    switch (node->nodeType) {
 
     case GEOMETRY:
         if (node->vertexArrayObjectID == padNode->vertexArrayObjectID) {
-            double timeDelta = getTimeDeltaSeconds();
-            float frequency = 22.2f; // Increase or decrease the frequency of the sine wave
-            float amplitude = 200.0f; // Increase or decrease the amplitude of the sine wave
-            float noiseFactor = 0.02f + (sin(timeDelta * frequency) * amplitude);
-            for (size_t i = 0; i < originalVertices.size() - 1; ++i) {
-                float noiseValue = SimplexNoise::noise(originalVertices[i].x, originalVertices[i].y, originalVertices[i].z);
-                pad.vertices[i] = originalVertices[i] * 1.0f * (1.0f + noiseFactor * (noiseValue - 1.0f));
-            }
-            glBindBuffer(GL_ARRAY_BUFFER, node->vertexBufferID);
-            glBufferData(GL_ARRAY_BUFFER, pad.vertices.size() * sizeof(glm::vec3), pad.vertices.data(), GL_STATIC_DRAW);
+         
 
+
+            double timeDelta = getTimeDeltaSeconds();
+           // float noiseFactor = 0.002f + (sin(timeDelta * frequency) * amplitude);
+            //// test
+            //noiseSettings.centre.x += (sin(timeDelta * frequency) * amplitude);
+            //noiseSettings.centre.y += (sin(timeDelta * frequency) * amplitude);
+            //noiseSettings.centre.z += (sin(timeDelta * frequency) * amplitude);
+            //noiseSettings.minValue = sin(timeDelta * frequency);
+
+            //shapeGenerator(&pad.vertices);
+
+
+            // mountens
+            //shapeSettings.noiselayer[1].noiseSettings;
+            //shapeSettings.noiselayer[1].noiseSettings.roughness = 1.95;
+            //shapeSettings.noiselayer[1].noiseSettings.strength = 0.80;
+            if(change){
+                for (size_t i = 0; i < originalVertices.size(); ++i) {
+                    //for (int j = 0; j < shapeSettings.numberofnoiselayer; i++) {
+                    //    shapeSettings.noiselayer[i] = NoiseSettings;
+                    //}
+                
+
+                    //shapegenerator
+                   /* float noiseValue = Noisefilter(originalVertices[i], shapeSettings.noiselayer[0].noiseSettings);
+                    pad.vertices[i] = originalVertices[i] * shapeSettings.planetRaduis * noiseValue;*/
+
+
+                    //shapegeneratorv2
+                    float elevation = 0;
+                    float firstLayerValue = 0;
+                    if (shapeSettings.numberofnoiselayer > 0) {
+                        firstLayerValue = Noisefilter(originalVertices[i], shapeSettings.noiselayer[0].noiseSettings);
+                        if (shapeSettings.noiselayer[0].enable) {
+                            elevation = firstLayerValue;
+                        }
+                    }
+                    for (int j = 1; j < shapeSettings.numberofnoiselayer; j++) {
+                        if (shapeSettings.noiselayer[j].enable) {
+                            float mask = (shapeSettings.noiselayer[j].useFisrtLayerAsMask) ? firstLayerValue : 1;
+                            elevation += Noisefilter(originalVertices[i], shapeSettings.noiselayer[j].noiseSettings) * mask;
+                        }
+                            
+                    }
+                    pad.vertices[i] = originalVertices[i] * shapeSettings.planetRaduis * (1+ elevation);
+                }
+                glBindBuffer(GL_ARRAY_BUFFER, node->vertexBufferID);
+                glBufferData(GL_ARRAY_BUFFER, pad.vertices.size() * sizeof(glm::vec3), pad.vertices.data(), GL_STATIC_DRAW);
+                change = false;
+            }
         }
         if (node->vertexArrayObjectID != -1) {
 

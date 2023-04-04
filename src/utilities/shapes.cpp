@@ -198,7 +198,7 @@ Mesh sphereCube(glm::vec3 scale, glm::vec2 textureScale, bool tilingTextures, bo
 
                 for (int i = 0; i < 4; ++i) {
                         float noiseValue = SimplexNoise::noise(quadPoints[i].x, quadPoints[i].y, quadPoints[i].z);
-                        glm::vec3 vertex = quadPoints[i] * radius * (1.0f + noiseFactor * (noiseValue - 1.0f));
+                        glm::vec3 vertex = quadPoints[i];// *radius* (1.0f + noiseFactor * (noiseValue - 1.0f));
                         m.vertices.push_back(vertex);
                         glm::vec3 normal = calculateNormal(quadPoints[0], quadPoints[1], quadPoints[2]);
                         if (inverted) normal = -normal;
