@@ -41,16 +41,20 @@ struct NoiseSettings
     float maxValue = 0.0;
     //Shapesettings
 };
-
+class Filter {
+public:
+    NoiseSettings noiseSetting;
+    virtual float NoiseFilter(glm::vec3 point) = 0;
+};
 struct NoiseLayer {
     bool enable = true;
     bool useFisrtLayerAsMask = true;
-    NoiseSettings noiseSettings;
+    std::unique_ptr<Filter> filter;
 };
 struct ShapeSettings
 {
     float planetRaduis = 20.0f;
-    NoiseLayer noiselayer[const_numberofnoiselayer];
+    NoiseLayer* noiselayer[const_numberofnoiselayer];
     int numberofnoiselayer = const_numberofnoiselayer;
 };
 ShapeSettings shapeSettings;
@@ -175,37 +179,48 @@ float evaluate(glm::vec3 point, NoiseSettings noiseSetting) {
     return noiseValue * noiseSetting.strength;
 }
 
-float Noisefilter(glm::vec3 point, NoiseSettings noiseSetting) {
-    float noiseValue = 0;
-    float frequency = noiseSetting.baseroughness;
-    float amplitude = 1;
-    for (int i = 0; i < noiseSetting.layers; i++) {
-        float v = evaluate(point * frequency + noiseSetting.centre, noiseSetting);
-        noiseValue += (v + 1) * 0.5f * amplitude;
-        frequency *= noiseSetting.roughness;
-        amplitude *= noiseSetting.persistence;
-    }
-    noiseValue = std::max(0.0f, noiseValue-noiseSetting.minValue);
-    return noiseValue * noiseSetting.strength;
-}
 
-float RidgidNoisefilter(glm::vec3 point, NoiseSettings noiseSetting) {
-    float noiseValue = 0;
-    float frequency = noiseSetting.baseroughness;
-    float amplitude = 1;
-    float weight = 1;
-    for (int i = 0; i < noiseSetting.layers; i++) {
-        float v = 1-std::abs(evaluate(point * frequency + noiseSetting.centre, noiseSetting));
-        v *= v;
-        v *= weight;
-        weight = v;
-        noiseValue += v * amplitude;
-        frequency *= noiseSetting.roughness;
-        amplitude *= noiseSetting.persistence;
+class SimpleNoiseFilter : public Filter {
+public:
+
+    float NoiseFilter(glm::vec3 point) override {
+        float noiseValue = 0;
+        float frequency = noiseSetting.baseroughness;
+        float amplitude = 1;
+        for (int i = 0; i < noiseSetting.layers; i++) {
+            float v = evaluate(point * frequency + noiseSetting.centre, noiseSetting);
+            noiseValue += (v + 1) * 0.5f * amplitude;
+            frequency *= noiseSetting.roughness;
+            amplitude *= noiseSetting.persistence;
+        }
+        noiseValue = std::max(0.0f, noiseValue - noiseSetting.minValue);
+        return noiseValue * noiseSetting.strength;
     }
-    noiseValue = std::max(0.0f, noiseValue - noiseSetting.minValue);
-    return noiseValue * noiseSetting.strength;
-}
+};
+
+class RidgidNoisefilter : public Filter {
+public:
+
+    float NoiseFilter(glm::vec3 point) override {
+        float noiseValue = 0;
+        float frequency = noiseSetting.baseroughness;
+        float amplitude = 1;
+        float weight = 1;
+        for (int i = 0; i < noiseSetting.layers; i++) {
+            float v = 1 - std::abs(evaluate(point * frequency + noiseSetting.centre, noiseSetting));
+            v *= v;
+            v *= weight;
+            weight = v;
+            noiseValue += v * amplitude;
+            frequency *= noiseSetting.roughness;
+            amplitude *= noiseSetting.persistence;
+        }
+        noiseValue = std::max(0.0f, noiseValue - noiseSetting.minValue);
+        return noiseValue * noiseSetting.strength;
+    }
+};
+
+
 
 
 void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
@@ -214,7 +229,12 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
         return;
     }
 
-    NoiseSettings noise = shapeSettings.noiselayer[0].noiseSettings;
+    shapeSettings.noiselayer[0] = new NoiseLayer();
+    shapeSettings.noiselayer[0]->filter = std::make_unique<SimpleNoiseFilter>();
+    shapeSettings.noiselayer[1] = new NoiseLayer();
+    shapeSettings.noiselayer[1]->filter = std::make_unique<SimpleNoiseFilter>();
+
+    NoiseSettings noise = shapeSettings.noiselayer[0]->filter->noiseSetting;
     noise.strength = 0.51f;
     noise.baseroughness = 0.71f;
     noise.roughness = 1.83f;
@@ -222,17 +242,18 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     noise.layers = 5;
     noise.centre = glm::vec3(1);
     noise.minValue = 1.35409;
-    shapeSettings.noiselayer[0].noiseSettings = noise;
+    shapeSettings.noiselayer[0]->filter->noiseSetting = noise;
 
-    noise = shapeSettings.noiselayer[1].noiseSettings;
-    noise.strength = 0.80f; // 0.80;
+    // Initialize the noise settings of the second NoiseLayer
+    noise = shapeSettings.noiselayer[1]->filter->noiseSetting;
+    noise.strength = 0.80f;
     noise.baseroughness = 1.08f;
-    noise.roughness = 1.92717;
+    noise.roughness = 1.92717f;
     noise.persistence = 0.54f;
     noise.layers = 5;
     noise.centre = glm::vec3(1);
     noise.minValue = 1.62409;
-    shapeSettings.noiselayer[1].noiseSettings = noise;
+    shapeSettings.noiselayer[1]->filter->noiseSetting = noise;
     //printf(" settings:%g ", shapeSettings.noiseSettings.strength);
     options = gameOptions;
 
@@ -391,48 +412,48 @@ void processInput(GLFWwindow* window,float timeDelta) {
     }
 
     if (glfwGetKey(window, GLFW_KEY_T) == GLFW_PRESS) {
-        shapeSettings.noiselayer[0].noiseSettings.minValue -= timeDelta;
+        shapeSettings.noiselayer[0]->filter->noiseSetting.minValue -= timeDelta;
         change = true;
-        printf("\nminvalue: %g", shapeSettings.noiselayer[0].noiseSettings.minValue);
+        printf("\nminvalue: %g", shapeSettings.noiselayer[0]->filter->noiseSetting.minValue);
     }
     if (glfwGetKey(window, GLFW_KEY_Y) == GLFW_PRESS) {
-        shapeSettings.noiselayer[0].noiseSettings.minValue += timeDelta;
+        shapeSettings.noiselayer[0]->filter->noiseSetting.minValue += timeDelta;
         change = true;
-        printf("\nminvalue: %g", shapeSettings.noiselayer[0].noiseSettings.minValue);
+        printf("\nminvalue: %g", shapeSettings.noiselayer[0]->filter->noiseSetting.minValue);
     }
     if (glfwGetKey(window, GLFW_KEY_G) == GLFW_PRESS) {
-        shapeSettings.noiselayer[0].noiseSettings.roughness -= (timeDelta);
+        shapeSettings.noiselayer[0]->filter->noiseSetting.roughness -= (timeDelta);
         change = true;
-        printf("\nroughness: %g", shapeSettings.noiselayer[0].noiseSettings.roughness);
+        printf("\nroughness: %g", shapeSettings.noiselayer[0]->filter->noiseSetting.roughness);
     }
     if (glfwGetKey(window, GLFW_KEY_H) == GLFW_PRESS) {
-        shapeSettings.noiselayer[0].noiseSettings.roughness += (timeDelta);
+        shapeSettings.noiselayer[0]->filter->noiseSetting.roughness += (timeDelta);
         change = true;
-        printf("\nroughness: %g", shapeSettings.noiselayer[0].noiseSettings.roughness);
+        printf("\nroughness: %g", shapeSettings.noiselayer[0]->filter->noiseSetting.roughness);
     }
 
     if (glfwGetKey(window, GLFW_KEY_U) == GLFW_PRESS) {
-        shapeSettings.noiselayer[0].noiseSettings.persistence -= (timeDelta);
+        shapeSettings.noiselayer[0]->filter->noiseSetting.persistence -= (timeDelta);
         change = true;
-        printf("\npersistence: %g", shapeSettings.noiselayer[0].noiseSettings.persistence);
+        printf("\npersistence: %g", shapeSettings.noiselayer[0]->filter->noiseSetting.persistence);
     }
     if (glfwGetKey(window, GLFW_KEY_I) == GLFW_PRESS) {
-        shapeSettings.noiselayer[0].noiseSettings.persistence += (timeDelta);
+        shapeSettings.noiselayer[0]->filter->noiseSetting.persistence += (timeDelta);
         change = true;
-        printf("\npersistence: %g", shapeSettings.noiselayer[0].noiseSettings.persistence);
+        printf("\npersistence: %g", shapeSettings.noiselayer[0]->filter->noiseSetting.persistence);
     }
 
 
     if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS) {
-        shapeSettings.noiselayer[0].enable = !shapeSettings.noiselayer[0].enable;
+        shapeSettings.noiselayer[0]->enable = !shapeSettings.noiselayer[0]->enable;
         change = true;
-        printf("\n1 off: %B", shapeSettings.noiselayer[0].enable);
+        printf("\n1 off: %B", shapeSettings.noiselayer[0]->enable);
     }
 
     if (glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS) {
-        shapeSettings.noiselayer[1].enable = !shapeSettings.noiselayer[1].enable;
+        shapeSettings.noiselayer[1]->enable = !shapeSettings.noiselayer[1]->enable;
         change = true;
-        printf("\n2 off: %B", shapeSettings.noiselayer[1].enable);
+        printf("\n2 off: %B", shapeSettings.noiselayer[1]->enable);
     }
 
     //if (glfwGetKey(window, GLFW_KEY_3) == GLFW_PRESS) {
@@ -580,15 +601,15 @@ void renderNode(SceneNode* node) {
                     float elevation = 0;
                     float firstLayerValue = 0;
                     if (shapeSettings.numberofnoiselayer > 0) {
-                        firstLayerValue = Noisefilter(originalVertices[i], shapeSettings.noiselayer[0].noiseSettings);
-                        if (shapeSettings.noiselayer[0].enable) {
+                        firstLayerValue = shapeSettings.noiselayer[0]->filter->NoiseFilter(originalVertices[i]);
+                        if (shapeSettings.noiselayer[0]->enable) {
                             elevation = firstLayerValue;
                         }
                     }
                     for (int j = 1; j < shapeSettings.numberofnoiselayer; j++) {
-                        if (shapeSettings.noiselayer[j].enable) {
-                            float mask = (shapeSettings.noiselayer[j].useFisrtLayerAsMask) ? firstLayerValue : 1;
-                            elevation += Noisefilter(originalVertices[i], shapeSettings.noiselayer[j].noiseSettings) * mask;
+                        if (shapeSettings.noiselayer[j]->enable) {
+                            float mask = (shapeSettings.noiselayer[j]->useFisrtLayerAsMask) ? firstLayerValue : 1;
+                            elevation += shapeSettings.noiselayer[j]->filter->NoiseFilter(originalVertices[i]) * mask;
                         }
                             
                     }
