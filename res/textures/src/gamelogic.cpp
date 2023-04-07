@@ -166,66 +166,6 @@ unsigned int GetLoadedImage(PNGImage texture) {
     return textureid;
 }
 
-glm::vec4 ElevationColor(float elevation) {
-    float sealevel = 0.2f;
-    float lowgrassland = 0.3f;
-    float highgrassland = 0.4f;
-    float hillland = 0.5f;
-    float mountain = 0.8f;
-    float snow = 0.95f;
-
-    if (elevation <= sealevel) {
-        return glm::vec4(0, 0, 153, 255) / 255.0f;
-    }
-    if (elevation <= lowgrassland) {
-        return glm::vec4(25, 153, 0, 255) / 255.0f;
-    }
-    if (elevation <= highgrassland) {
-        return glm::vec4(77, 204, 0, 255) / 255.0f;
-    }
-    if (elevation <= hillland) {
-        return glm::vec4(128, 102, 0, 255) / 255.0f;
-    }
-    if (elevation <= mountain) {
-        return glm::vec4(102, 102, 102, 255) / 255.0f;
-    }
-    if (elevation <= snow) {
-        return glm::vec4(204, 204, 204, 255) / 255.0f;
-    }
-
-    return glm::vec4(255, 255, 255, 255) / 255.0f;
-}
-unsigned int GetElevationColorMap(SceneNode* node) {
-    int textureResolution = 50; // Set the texture resolution
-
-    // Step 2: Create a texture with a 1D resolution
-    std::vector<glm::vec4> colour(textureResolution);
-
-    // Step 3: Iterate through each pixel and set its color based on the gradient function
-    for (int i = 0; i < textureResolution; ++i) {
-        float t = float(i) / (textureResolution - 1.0f);
-        printf("\nValue;: %g", t);
-        colour[i] = ElevationColor(t);
-    }
-
-    // Step 4: Upload the image data to a texture in OpenGL
-
-    GLuint textureID;
-    glGenTextures(1, &textureID);
-    glBindTexture(GL_TEXTURE_1D, textureID);
-
-    glTexImage1D(GL_TEXTURE_1D, 0, GL_RGBA, textureResolution, 0, GL_RGBA, GL_FLOAT, colour.data());
-
-    glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-
-
-    node->elevationTextureID = textureID;
-    return textureID;
-     
-}
-
 float distance(glm::vec3 point1, glm::vec3 point2) {
     return glm::length(point2 - point1);
 }
@@ -433,8 +373,8 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     boxNode->textureID = GetLoadedImage(brick_diffuse);
     boxNode->textureNormal = GetLoadedImage(brick_normalmap);
     boxNode->textureRoughness = GetLoadedImage(brick03_rgh);
-    GetElevationColorMap(padNode);
-    //padNode->textureID = GetLoadedImage(world);
+
+    padNode->textureID = GetLoadedImage(world);
     getTimeDeltaSeconds();
 
     std::cout << fmt::format("Initialized scene with {} SceneNodes.", totalChildren(rootNode)) << std::endl;
@@ -684,7 +624,6 @@ void renderNode(SceneNode* node) {
             glBindTextureUnit(0, node->textureID);
             glBindTextureUnit(1, node->textureNormal);
             glBindTextureUnit(2, node->textureRoughness);
-            glBindTextureUnit(3, node->elevationTextureID);
             glDrawElements(GL_TRIANGLES, node->VAOIndexCount, GL_UNSIGNED_INT, nullptr);
         }
         break;

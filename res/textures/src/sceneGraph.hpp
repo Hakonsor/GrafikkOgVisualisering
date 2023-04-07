@@ -61,7 +61,6 @@ struct SceneNode {
 	int	bitangentBufferID;
 	unsigned int VAOIndexCount;
 	unsigned int textureID;
-	unsigned int elevationTextureID;
 	unsigned int textureNormal;
 	unsigned int textureRoughness;
 	

@@ -7,27 +7,36 @@ struct Lights {
 in layout(location = 0) vec3 in_normal;
 in layout(location = 1) vec2 textureCoordinates;
 in layout(location = 2) vec3 pos;
+
 in layout(location = 3) mat3 TBN;
+in layout(location = 7) vec3 vpos;
+//in layout(location = 5) float fragDistanceFromCenter;
 
 uniform Lights lights[3];
+//uniform float distanceThreshold;
 
 uniform layout(location = 5) mat4 V;
 uniform layout(location = 6) int normal_geo;
+uniform layout(location = 8) vec2 minmax;
+uniform layout(location = 7) vec3 ballpos;
 uniform layout(location = 9) vec3 eye;
-uniform layout(location = 10) vec3 ballpos;
 
+uniform layout(location = 11) vec3 center;
+
+layout(binding = 3) uniform sampler1D elevationcolor;
 layout(binding = 2) uniform sampler2D roughness_texture;
 layout(binding = 1) uniform sampler2D normal_texture;
 layout(binding = 0) uniform sampler2D diffusetexture;
 
 out vec4 color;
 
+
 float rand(vec2 co) { return fract(sin(dot(co.xy, vec2(12.9898,78.233))) * 43758.5453); }
 float dither(vec2 uv) { return (rand(uv)*2.0-1.0) / 256.0; }
 
 float diffuse_reflekton = 0.6;
 // Task 1 f)
-float ambient = 0.01;
+float ambient = 0.2;
 float shininessVal = 32;
 vec3 lightSpecular;
 
@@ -51,6 +60,9 @@ float specular(vec3 n, vec3 l, vec3 campos ){
     vec3 R = reflect(-n, l);   
     vec3 V = normalize(campos); 
     float specAngle = max(dot(R, V), 0.0);
+    if(normal_geo != 1){
+        return pow(specAngle, shininessVal);
+    }
     float roughnessFactor = 5.0 / pow(texture(roughness_texture, textureCoordinates).r, 2.0);
     float specular = pow(specAngle, roughnessFactor); 
      //specular = pow(specAngle, shininessVal);
@@ -70,16 +82,27 @@ float map(float value, float min1, float max1, float min2, float max2) {
   return min2 + (value - min1) * (max2 - min2) / (max1 - min1);
 }
 
+float inverseLerp(float a, float b, float value) {
+    if (a != b) {
+        return (value - a) / (b - a);
+    }
+    else {
+        return 0.0f;
+    }
+}
 
 
 void main()
 {
-    float dilter = dither(textureCoordinates);
+    float distanceFromCenter = distance(vpos, center);
+    float elevation = inverseLerp(minmax.x, minmax.y, distanceFromCenter);
+    vec4 pixelcolor = texture(elevationcolor, elevation);
+  
     vec3 normal; 
-    if (normal_geo == 1) {
+    if (normal_geo == 1 ) {
         normal =   normalize(TBN *(texture( normal_texture , textureCoordinates) * 2 -1).xyz);
-    } else {
-        normal = normalize(in_normal);
+    }  else {
+        normal =  normalize(  vec3(1));
     }
 
     vec4 ballVec4 =  ( V ) * vec4(ballpos, 1.0f);
@@ -91,7 +114,7 @@ void main()
     vec3 campos = normalize(homo_eye-pos);
 
     vec3 diffuseTotal = vec3(0) + ambient;
-
+    
     for (int i = 0; i < lights.length(); i++)
     {
         vec4 homo = (  V  ) * vec4(lights[i].position, 1.0f);
@@ -127,17 +150,18 @@ void main()
         // Task 1 i)
         diffuseTotal += light;
     }
+
     
-    if(normal_geo == 1){
-        float dilter = dither(textureCoordinates);
-        vec4 object = texture( diffusetexture, textureCoordinates);
-        color = vec4((object.xyz*diffuseTotal)+dilter, object.w);
-        //color = vec4( TBN * (texture( normal_texture , textureCoordinates).xyz * 2 -1), 1.0);
-    }else {
-       
-        color = vec4(diffuseTotal+dilter, 1.0) ;
+    float dilter = dither(textureCoordinates);
+    
+//    vec4 nonFilteredColor = texture(filterlessPlanetTexture, textureCoordinates);
+
+
+    if (minmax.y < distanceFromCenter){
+        vec4 diftexture = texture(diffusetexture, textureCoordinates);
+        color = vec4((diftexture.xyz*diffuseTotal)+dilter, diftexture.w) ;
+    } else{
+        color = vec4(((pixelcolor.xyz)*diffuseTotal)+dilter, pixelcolor.w) ;
     }
-
-
 
     }
