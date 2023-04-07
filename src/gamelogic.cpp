@@ -167,33 +167,51 @@ unsigned int GetLoadedImage(PNGImage texture) {
 }
 
 glm::vec4 ElevationColor(float elevation) {
+    float deepsea = 0.18f;
     float sealevel = 0.2f;
+    float beach = 0.21f;
     float lowgrassland = 0.3f;
     float highgrassland = 0.4f;
     float hillland = 0.5f;
     float mountain = 0.8f;
     float snow = 0.95f;
 
-    if (elevation <= sealevel) {
-        return glm::vec4(0, 0, 153, 255) / 255.0f;
+    glm::vec4 color;
+
+    if (elevation <= deepsea) {
+        float t = elevation / deepsea;
+        color = glm::mix(glm::vec4(0, 0, 102, 255), glm::vec4(0, 0, 153, 255), t);
     }
-    if (elevation <= lowgrassland) {
-        return glm::vec4(25, 153, 0, 255) / 255.0f;
+    else if (elevation <= sealevel) {
+        float t = (elevation - deepsea) / (sealevel - deepsea);
+        color = glm::mix(glm::vec4(0, 0, 153, 255), glm::vec4(0, 128, 255, 255), t);
     }
-    if (elevation <= highgrassland) {
-        return glm::vec4(77, 204, 0, 255) / 255.0f;
+    else if (elevation <= beach) {
+        float t = (elevation - sealevel) / (beach - sealevel);
+        color = glm::mix(glm::vec4(0, 128, 255, 255), glm::vec4(240, 240, 64, 255), t);
     }
-    if (elevation <= hillland) {
-        return glm::vec4(128, 102, 0, 255) / 255.0f;
+    else if (elevation <= lowgrassland) {
+        float t = (elevation - beach) / (lowgrassland - beach);
+        color = glm::mix(glm::vec4(240, 240, 64, 255), glm::vec4(25, 153, 0, 255), t);
     }
-    if (elevation <= mountain) {
-        return glm::vec4(102, 102, 102, 255) / 255.0f;
+    else if (elevation <= highgrassland) {
+        float t = (elevation - lowgrassland) / (highgrassland - lowgrassland);
+        color = glm::mix(glm::vec4(25, 153, 0, 255), glm::vec4(77, 204, 0, 255), t);
     }
-    if (elevation <= snow) {
-        return glm::vec4(204, 204, 204, 255) / 255.0f;
+    else if (elevation <= hillland) {
+        float t = (elevation - highgrassland) / (hillland - highgrassland);
+        color = glm::mix(glm::vec4(77, 204, 0, 255), glm::vec4(128, 102, 0, 255), t);
+    }
+    else if (elevation <= mountain) {
+        float t = (elevation - hillland) / (mountain - hillland);
+        color = glm::mix(glm::vec4(128, 102, 0, 255), glm::vec4(102, 102, 102, 255), t);
+    }
+    else {
+        float t = (elevation - mountain) / (snow - mountain);
+        color = glm::mix(glm::vec4(102, 102, 102, 255), glm::vec4(255, 255, 255, 255), t);
     }
 
-    return glm::vec4(255, 255, 255, 255) / 255.0f;
+    return color / 255.0f;
 }
 unsigned int GetElevationColorMap(SceneNode* node) {
     int textureResolution = 50; // Set the texture resolution
@@ -441,7 +459,7 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
 
     std::cout << "Ready. Click to start!" << std::endl;
 }
-int celeplanet = 1;
+int celeplanet = 0;
 void processInput(GLFWwindow* window,float timeDelta) {
 
     if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
@@ -510,6 +528,11 @@ void processInput(GLFWwindow* window,float timeDelta) {
         shapeSettings.noiselayer[celeplanet]->filter->noiseSetting.strength += (timeDelta);
         change = true;
         printf("\nstrength: %g", shapeSettings.noiselayer[celeplanet]->filter->noiseSetting.strength);
+    }
+
+    if (glfwGetKey(window, GLFW_KEY_X) == GLFW_PRESS) {
+        shapeSettings.noiselayer[celeplanet]->filter->noiseSetting.centre.x += (timeDelta)*10;
+        change = true;
     }
 
     if (glfwGetKey(window, GLFW_KEY_U) == GLFW_PRESS) {
