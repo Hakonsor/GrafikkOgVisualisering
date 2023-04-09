@@ -4,15 +4,20 @@ struct Lights {
     vec3 position;
     vec3 color;
 };
+struct Biomes {
+    float startheight;
+};
 in layout(location = 0) vec3 in_normal;
 in layout(location = 1) vec2 textureCoordinates;
 in layout(location = 2) vec3 pos;
 
 in layout(location = 3) mat3 TBN;
 in layout(location = 7) vec3 vpos;
+in layout(location = 8) vec2 v_noise;
 //in layout(location = 5) float fragDistanceFromCenter;
 
 uniform Lights lights[3];
+uniform Biomes biomes[7];
 //uniform float distanceThreshold;
 
 uniform layout(location = 5) mat4 V;
@@ -20,10 +25,11 @@ uniform layout(location = 6) int normal_geo;
 uniform layout(location = 8) vec2 minmax;
 uniform layout(location = 7) vec3 ballpos;
 uniform layout(location = 9) vec3 eye;
-
+uniform layout(location = 10) int numBiomes;
 uniform layout(location = 11) vec3 center;
+uniform layout(location = 12) float noiseheight;
 
-layout(binding = 3) uniform sampler1D elevationcolor;
+layout(binding = 3) uniform sampler2D elevationcolor;
 layout(binding = 2) uniform sampler2D roughness_texture;
 layout(binding = 1) uniform sampler2D normal_texture;
 layout(binding = 0) uniform sampler2D diffusetexture;
@@ -92,17 +98,39 @@ float inverseLerp(float a, float b, float value) {
 }
 
 
+float BiomePercentFromPoint(float heightPercent) {
+    float biomeIndex = 0;
+    float blent = 1.0f;//todo make uniform
+    float blendRange = blent / 2.0f + .001f;
+    for (int i = 0; i < numBiomes; i++) {
+        float dist = heightPercent   - biomes[i].startheight;
+        float weight = inverseLerp(-blendRange, blendRange, dist );
+        biomeIndex *= (1-weight);
+        biomeIndex += i*weight;
+    }
+    return biomeIndex / float(max(1, numBiomes - 1));
+}
+
+
 void main()
 {
+
     float distanceFromCenter = distance(vpos, center);
-    float elevation = inverseLerp(minmax.x, minmax.y, distanceFromCenter);
-    vec4 pixelcolor = texture(elevationcolor, elevation);
-  
+    vec4 pixelcolor;
     vec3 normal; 
     if (normal_geo == 1 ) {
         normal =   normalize(TBN *(texture( normal_texture , textureCoordinates) * 2 -1).xyz);
     }  else {
         normal =  normalize(  vec3(1));
+            
+            float elevation = inverseLerp(minmax.x, minmax.y, distanceFromCenter);
+            float normalizedY = (vpos.y - (center.y - distanceFromCenter)) / (2.0 * distanceFromCenter);
+
+            normalizedY += v_noise.x;
+            pixelcolor = texture(elevationcolor, vec2(elevation, BiomePercentFromPoint(normalizedY)));
+           
+
+
     }
 
     vec4 ballVec4 =  ( V ) * vec4(ballpos, 1.0f);

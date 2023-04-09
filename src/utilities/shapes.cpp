@@ -169,7 +169,6 @@ Mesh sphereCube(glm::vec3 scale, glm::vec2 textureScale, bool tilingTextures, bo
         int lod = 100;//minLod + (int)(normalizedDistance * (maxLod - minLod));
         float step = 1.0f / lod;
         float noiseFactor =  0.09;
-        
 
         for (int row = 0; row < lod; ++row) {
             for (int col = 0; col < lod; ++col) {

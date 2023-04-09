@@ -20,80 +20,19 @@
 #include <conio.h>
 #include "utilities/imageLoader.hpp"
 #include "utilities/glfont.h"
-#include "SimplexNoise.h"
-#include <algorithm>
+
+
 enum KeyFrameAction {
     BOTTOM, TOP
 };
 
 #include <timestamps.h>
 
-const int const_numberofnoiselayer = 3;
-class MinMax {
-public:
-    float Min = 0;
-    float Max = 0;
 
-    MinMax() {
-        Min = std::numeric_limits<float>::max();
-        Max = std::numeric_limits<float>::lowest();
-    }
-    void AddValue(float  v) {
-        if (v > Max) {
-            Max = v;
-        }
-        if (v < Min) {
-            Min = v;
-        }
-    }
-};
-struct NoiseSettings
-{
-    float strength = 1.0f;
-    float baseroughness = 1.0f;
-    float roughness = 2.0f;
-    float persistence = 0.54f;
-    int layers = 1;
-    glm::vec3 centre = glm::vec3(1);
-    float minValue = 0.0;
-    float maxValue = 0.0;
-    float weightmultiplier = 0.8f;
-};
-class Filter {
-public:
-    NoiseSettings noiseSetting;
-    virtual float NoiseFilter(glm::vec3 point) = 0;
-};
-struct NoiseLayer {
-    bool enable = true;
-    bool useFisrtLayerAsMask = true;
-    std::unique_ptr<Filter> filter;
-};
-struct ShapeSettings
-{
-    MinMax minmax = MinMax();
-    float planetRaduis = 25.0f;
-    NoiseLayer* noiselayer[const_numberofnoiselayer];
-    int numberofnoiselayer = const_numberofnoiselayer;
-};
-struct ColourSettings {
-    glm::vec4 planetcolour = glm::vec4(1);
-    PNGImage planetmaterial;
-};
-class ColourGenerator{
-public:
-    ColourSettings  coloursetting;
-    void updateElevation(MinMax elevation) {
-        coloursetting.planetcolour.x = elevation.Min;
-        coloursetting.planetcolour.y = elevation.Max;
-        //glBindTextureUnit(0, node->textureID);
-        //glBindTextureUnit(0, node->textureID);
-    }
 
-};
+
 ShapeSettings shapeSettings;
 NoiseSettings noiseSettings;
-ColourGenerator colourGenerator;
 
 double padPositionX = 0;
 double padPositionZ = 0;
@@ -152,6 +91,15 @@ PNGImage brick_diffuse = loadPNGFile("../res/textures/Brick03_col.png");
 PNGImage brick03_rgh = loadPNGFile("../res/textures/Brick03_rgh.png");
 PNGImage world = loadPNGFile("../res/textures/world.png");
 
+float inverseLerp(float a, float b, float value) {
+    if (a != b) {
+        return (value - a) / (b - a);
+    }
+    else {
+        return 0.0f;
+    }
+}
+
 unsigned int GetLoadedImage(PNGImage texture) {
     int target = GL_TEXTURE_2D;
     unsigned int textureid;
@@ -166,59 +114,48 @@ unsigned int GetLoadedImage(PNGImage texture) {
     return textureid;
 }
 
-struct ElevationColorPoint {
-    float elevation;
-    glm::vec4 color;
-};
 
-glm::vec4 ElevationColor(float elevation) {
-    std::vector<ElevationColorPoint> elevationColors = {
-        {0.00f, glm::vec4(0, 0, 102, 255)},
-        {0.18f, glm::vec4(0, 0, 153, 255)},
-        {0.20f, glm::vec4(0, 128, 255, 255)},
-        {0.21f, glm::vec4(240, 240, 64, 255)},
-        {0.30f, glm::vec4(25, 153, 0, 255)},
-        {0.40f, glm::vec4(77, 204, 0, 255)},
-        {0.50f, glm::vec4(128, 102, 0, 255)},
-        {0.80f, glm::vec4(102, 102, 102, 255)},
-        {0.95f, glm::vec4(255, 255, 255, 255)}
-    };
 
+glm::vec4 ElevationColor(float elevation, std::vector<ElevationColorPoint> elevationColors) {
+    //printf("elevation: %g", elevation);
     for (size_t i = 0; i < elevationColors.size() - 1; ++i) {
         if (elevation >= elevationColors[i].elevation && elevation <= elevationColors[i + 1].elevation) {
             float t = (elevation - elevationColors[i].elevation) / (elevationColors[i + 1].elevation - elevationColors[i].elevation);
             return glm::mix(elevationColors[i].color, elevationColors[i + 1].color, t) / 255.0f;
         }
     }
-
-    
     return elevationColors.back().color / 255.0f;
 }
+
 unsigned int GetElevationColorMap(SceneNode* node) {
-    int textureResolution = 50; // Set the texture resolution
-
-    // Step 2: Create a texture with a 1D resolution
-    std::vector<glm::vec4> colour(textureResolution);
-
-    // Step 3: Iterate through each pixel and set its color based on the gradient function
-    for (int i = 0; i < textureResolution; ++i) {
-        float t = float(i) / (textureResolution - 1.0f);
-        printf("\nValue;: %g", t);
-        colour[i] = ElevationColor(t);
+    int textureResolution = 100;
+    int numBiomes = node->colorGenerators->biomes.size();
+    //printf("enumbiomes: %d", numBiomes);
+    std::vector<glm::vec4> colour(textureResolution * numBiomes);
+    int colorindex = 0;
+    for (int biome = 0; biome < numBiomes; ++biome ) {
+        for (int i = 0; i < textureResolution; i++) {
+            float t = float(i) / (textureResolution - 1.0f);
+      
+            glm::vec4 gradientcollum = ElevationColor(t , node->colorGenerators->biomes[biome].coloursettings.colour);// node->colorSettings.biome.coloursettings.colour
+            glm::vec4 tintcol = node->colorGenerators->biomes[biome].tint;
+           
+            colour[colorindex] = gradientcollum * (1 - node->colorGenerators->biomes[biome].tintpercent) + tintcol * node->colorGenerators->biomes[biome].tintpercent;
+            colorindex++;
+            
+        }
     }
-
-    // Step 4: Upload the image data to a texture in OpenGL
 
     GLuint textureID;
     glGenTextures(1, &textureID);
-    glBindTexture(GL_TEXTURE_1D, textureID);
+    glBindTexture(GL_TEXTURE_2D, textureID);
 
-    glTexImage1D(GL_TEXTURE_1D, 0, GL_RGBA, textureResolution, 0, GL_RGBA, GL_FLOAT, colour.data());
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, textureResolution, numBiomes, 0, GL_RGBA, GL_FLOAT, colour.data());
 
-    glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
     node->elevationTextureID = textureID;
     return textureID;
@@ -266,52 +203,9 @@ void mouseCallback(GLFWwindow* window, double x, double y) {
 // };
 // LightSource lightSources[/*Put number of light sources you want here*/];
 
-float evaluate(glm::vec3 point, NoiseSettings noiseSetting) {
-    glm::vec3 evaluate = point * noiseSetting.roughness + noiseSetting.centre;
-    float noiseValue = (SimplexNoise::noise(evaluate.x, evaluate.y, evaluate.z) + 1) * 0.5;
-    return noiseValue * noiseSetting.strength;
-}
 
 
-class SimpleNoiseFilter : public Filter {
-public:
 
-    float NoiseFilter(glm::vec3 point) override {
-        float noiseValue = 0;
-        float frequency = noiseSetting.baseroughness;
-        float amplitude = 1;
-        for (int i = 0; i < noiseSetting.layers; i++) {
-            float v = evaluate(point * frequency + noiseSetting.centre, noiseSetting);
-            noiseValue += (v + 1) * 0.5f * amplitude;
-            frequency *= noiseSetting.roughness;
-            amplitude *= noiseSetting.persistence;
-        }
-        noiseValue = std::max(0.0f, noiseValue - noiseSetting.minValue);
-        return noiseValue * noiseSetting.strength;
-    }
-};
-
-class RidgidNoisefilter : public Filter {
-public:
-
-    float NoiseFilter(glm::vec3 point) override {
-        float noiseValue = 0;
-        float frequency = noiseSetting.baseroughness;
-        float amplitude = 1;
-        float weight = 1;
-        for (int i = 0; i < noiseSetting.layers; i++) {
-            float v = 1 - std::abs(evaluate(point * frequency + noiseSetting.centre, noiseSetting));
-            v *= v;
-            v *= weight;
-            weight = std::min(std::max(v * noiseSetting.weightmultiplier, 0.0f), 1.0f);
-            noiseValue += v * amplitude;
-            frequency *= noiseSetting.roughness;
-            amplitude *= noiseSetting.persistence;
-        }
-        noiseValue = std::max(0.0f, noiseValue - noiseSetting.minValue);
-        return noiseValue * noiseSetting.strength;
-    }
-};
 
 
 
@@ -323,7 +217,7 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     if (!buffer->loadFromFile("../res/Hall of the Mountain King.ogg")) {
         return;
     }
-    ColourGenerator colourGenerator = ColourGenerator(); 
+    
     shapeSettings.noiselayer[0] = new NoiseLayer();
     shapeSettings.noiselayer[0]->filter = std::make_unique<SimpleNoiseFilter>();
     shapeSettings.noiselayer[1] = new NoiseLayer();
@@ -412,7 +306,7 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     lightLeftNode->id = 2;
     textureNode->id = 9;
 
-    lightLeftNode->color = glm::vec3(255.0f/255, 241.0f / 255, 00.1);
+    lightLeftNode->color = glm::vec3(155.0f/255, 155.0f / 255, 155/255);
 
 
     lightLeftNode->position = { 10, 20, 40 };
@@ -432,8 +326,94 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     boxNode->textureID = GetLoadedImage(brick_diffuse);
     boxNode->textureNormal = GetLoadedImage(brick_normalmap);
     boxNode->textureRoughness = GetLoadedImage(brick03_rgh);
+    ColourGenerator* colors = new ColourGenerator(7);
+    colors->filter->noiseSetting.strength =1;
+    //colors->noiseOffset = 0.1;
+    //colors->noiseStrength = 0.1;
+
+    BiomeSettings biome = colors->biomes[0];
+    
+    biome.tint = glm::vec4(0);
+    biome.startheight = 0.0001f;
+    biome.coloursettings.colour =  {
+        {0.00f, glm::vec4(255, 255, 255, 255)},
+        {0.80f, glm::vec4(150, 150, 150, 255)}, // High rocky terrain
+        {0.95f, glm::vec4(255, 255, 255, 255)}  // Mountain top
+    };
+    colors->biomes[0] = biome;
+
+    biome = colors->biomes[1];
+    biome.tint = glm::vec4(1);
+    biome.coloursettings.colour = {
+       {0.00f, glm::vec4(0, 0, 102, 255)}, // Deepsea
+    {0.18f, glm::vec4(30, 144, 255, 255)}, // Icy water
+    {0.20f, glm::vec4(70, 130, 180, 255)}, // Ice
+    {0.21f, glm::vec4(255, 250, 250, 255)}, // Snowy
+    {0.30f, glm::vec4(240, 248, 255, 255)}, // Light snow
+    {0.40f, glm::vec4(205, 133, 63, 255)}, // Bare ground
+    {0.50f, glm::vec4(139, 69, 19, 255)}, // Rocky ground
+    {0.80f, glm::vec4(150, 150, 150, 255)}, // High rocky terrain
+    {0.95f, glm::vec4(255, 255, 255, 255)}  // Mountain top
+    };
+    biome.startheight = 0.002f;
+    colors->biomes[1] = biome;
+
+    biome = colors->biomes[2];
+    biome.tint = glm::vec4(1);
+    biome.startheight = 0.030f;
+    colors->biomes[2] = biome;
+
+    biome = colors->biomes[3];
+    biome.tint = glm::vec4(1);
+    biome.startheight = 0.50f; 
+    biome.coloursettings.colour = {
+    {0.00f, glm::vec4(0, 0, 102, 255)}, // Deepsea
+    { 0.18f, glm::vec4(25, 25, 112, 255) }, // Shallow water
+    { 0.20f, glm::vec4(218, 165, 32, 255) }, // Beach
+    { 0.30f, glm::vec4(244, 164, 96, 255) }, // Light sand
+    { 0.40f, glm::vec4(210, 180, 140, 255) }, // Sand
+    { 0.50f, glm::vec4(139, 69, 19, 255) }, // Rocky ground
+    { 0.60f, glm::vec4(160, 82, 45, 255) }, // Red rock
+    { 0.80f, glm::vec4(128, 128, 0, 255) }, // Sparse vegetation
+    { 0.95f, glm::vec4(105, 105, 105, 255) }  // Mountain top
+    };
+    colors->biomes[3] = biome;
+
+    biome = colors->biomes[4];
+    biome.tint = glm::vec4(1);
+    biome.startheight = 0.60f;
+    colors->biomes[4] = biome;
+
+    biome = colors->biomes[5];
+    biome.tint = glm::vec4(1);
+    biome.startheight = 0.99f;
+    //biome.coloursettings.colour = {
+    //       {0.00f, glm::vec4(0, 0, 102, 255)}, // Deepsea
+    //{0.18f, glm::vec4(30, 144, 255, 255)}, // Icy water
+    //{0.20f, glm::vec4(70, 130, 180, 255)}, // Ice
+    //{0.21f, glm::vec4(255, 250, 250, 255)}, // Snowy
+    //{0.30f, glm::vec4(240, 248, 255, 255)}, // Light snow
+    //{0.40f, glm::vec4(205, 133, 63, 255)}, // Bare ground
+    //{0.50f, glm::vec4(139, 69, 19, 255)}, // Rocky ground
+    //{0.80f, glm::vec4(150, 150, 150, 255)}, // High rocky terrain
+    //{0.95f, glm::vec4(255, 255, 255, 255)}  // Mountain top
+    //};
+    colors->biomes[5] = biome;
+
+    biome = colors->biomes[6];
+    biome.tint = glm::vec4(0);
+    biome.startheight = 1.00f;
+    biome.coloursettings.colour = {
+        {0.00f, glm::vec4(255, 255, 255, 255)},
+        {0.80f, glm::vec4(150, 150, 150, 255)}, // High rocky terrain
+        {0.95f, glm::vec4(255, 255, 255, 255)}  // Mountain top
+    };
+    colors->biomes[6] = biome;
+
+    padNode->colorGenerators = colors;
     GetElevationColorMap(padNode);
-    //padNode->textureID = GetLoadedImage(world);
+    printf("\nelecationid: %d", padNode->elevationTextureID);
+    /*padNode->textureID = GetLoadedImage(world);*/
     getTimeDeltaSeconds();
 
     std::cout << fmt::format("Initialized scene with {} SceneNodes.", totalChildren(rootNode)) << std::endl;
@@ -605,8 +585,6 @@ void updateNodeTransformations(SceneNode* node, glm::mat4 transformationThusFar)
 
     switch (node->nodeType) {
     case GEOMETRY:
-
-
         if (node->id == padNode->id) {
             // Send position of ball
             glm::vec3 shadow = node->currentTransformationMatrix * glm::vec4(0, 0, 0, 1);
@@ -649,6 +627,7 @@ void renderNode(SceneNode* node) {
     case GEOMETRY:
         if (node->vertexArrayObjectID == padNode->vertexArrayObjectID) {
             double timeDelta = getTimeDeltaSeconds();
+            std::vector<glm::vec1> uv(originalVertices.size());
             //noiseSettings.centre.x += (sin(timeDelta * frequency) * amplitude);
             if(change){
                 for (size_t i = 0; i < originalVertices.size(); ++i) {
@@ -669,18 +648,32 @@ void renderNode(SceneNode* node) {
                     elevation = shapeSettings.planetRaduis * (1 + elevation);
                     shapeSettings.minmax.AddValue(elevation);
                     pad.vertices[i] = originalVertices[i] * elevation;
+
+                    uv[i] = glm::vec1((node->colorGenerators->filter->NoiseFilter(originalVertices[i])-node->colorGenerators->noiseOffset) * node->colorGenerators->noiseStrength);
+                }
+                printf("\n\nheigh: %f");
+                for (size_t i = 0; i < node->colorGenerators->numbiomes; i++) {
+                    std::string uniformName = "biomes[" + std::to_string(i) + "].startheight";
+                    GLint startheightLocation = shader->getUniformFromName(uniformName.c_str());
+                    printf("location: %d", startheightLocation);
+                     printf("heigh: %f", node->colorGenerators->biomes[i].startheight);
+                    glUniform1f(startheightLocation, node->colorGenerators->biomes[i].startheight);
                 }
                 glUniform3f(11, node->position.x,node->position.y, node->position.z);
                 glUniform2f(8, shapeSettings.minmax.Min, shapeSettings.minmax.Max);
                 glm::vec3 position = node->currentTransformationMatrix * glm::vec4(0, 0, 0, 1);
                 glUniform3f(7, position.x, position.y, position.z);
+                glBindBuffer(GL_ARRAY_BUFFER, node->noiseBufferID); 
+                glBufferData(GL_ARRAY_BUFFER, uv.size() * sizeof(glm::vec1), uv.data(), GL_STATIC_DRAW);
                 glBindBuffer(GL_ARRAY_BUFFER, node->vertexBufferID);
                 glBufferData(GL_ARRAY_BUFFER, pad.vertices.size() * sizeof(glm::vec3), pad.vertices.data(), GL_STATIC_DRAW);
                 change = false;
             }
         }
         if (node->vertexArrayObjectID != -1) {
-            // 1 for bruk texture
+            glUniform1i(10, static_cast<GLint>(node->colorGenerators->biomes.size()));
+            
+            glUniform1f(12, 0.3f);
             glUniform1i(6, 2);
             glUniformMatrix3fv(7, 1, GL_FALSE, glm::value_ptr(node->position));
             glUniformMatrix3fv(8, 1, GL_FALSE, glm::value_ptr(node->position));

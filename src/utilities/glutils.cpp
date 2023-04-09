@@ -76,6 +76,7 @@ void generateBufferWhitNode(Mesh &mesh, SceneNode &node) {
     glGenVertexArrays(1, &vaoID);
     glBindVertexArray(vaoID);
     node.vertexBufferID = generateAttribute(0, 3, mesh.vertices, false);
+
     generateAttribute(1, 3, mesh.normals, true);
     if (mesh.textureCoordinates.size() > 0) {
         generateAttribute(2, 2, mesh.textureCoordinates, false);
@@ -90,6 +91,8 @@ void generateBufferWhitNode(Mesh &mesh, SceneNode &node) {
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, mesh.indices.size() * sizeof(unsigned int), mesh.indices.data(), GL_STATIC_DRAW);
     node.indexBufferID = indexBufferID;
     
+    node.noiseBufferID = generateAttribute(5, 1, std::vector<glm::vec1>(mesh.vertices.size()), false);
+
     
     if (mesh.normals.size() > 0 ) {
         computeTangentBasis(
@@ -126,6 +129,7 @@ unsigned int generateBuffer(Mesh& mesh) {
     glGenBuffers(1, &indexBufferID);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBufferID);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, mesh.indices.size() * sizeof(unsigned int), mesh.indices.data(), GL_STATIC_DRAW);
+
 
     if (mesh.normals.size() > 0) {
         computeTangentBasis(
