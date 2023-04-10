@@ -28,7 +28,6 @@ enum KeyFrameAction {
 
 #include <timestamps.h>
 
-
 ShapeSettings selectSettings;
 
 double padPositionX = 0;
@@ -49,6 +48,7 @@ SceneNode* rootNode;
 SceneNode* boxNode;
 SceneNode* padNode;
 SceneNode* moonNode;
+SceneNode* astroidNode;
 
 SceneNode* lightLeftNode;
 
@@ -109,8 +109,6 @@ unsigned int GetLoadedImage(PNGImage texture) {
     return textureid;
 }
 
-
-
 glm::vec4 ElevationColor(float elevation, std::vector<ElevationColorPoint> elevationColors) {
     //printf("elevation: %g", elevation);
     for (size_t i = 0; i < elevationColors.size() - 1; ++i) {
@@ -123,24 +121,20 @@ glm::vec4 ElevationColor(float elevation, std::vector<ElevationColorPoint> eleva
 }
 
 unsigned int GetElevationColorMap(SceneNode* node) {
-    int textureResolution = 100;
-    int numBiomes = node->colorGenerators->biomes.size();
+    int textureResolution = 50;
+    int numBiomes = node->colorGenerators->numbiomes;
     //printf("enumbiomes: %d", numBiomes);
     std::vector<glm::vec4> colour(textureResolution * numBiomes);
     int colorindex = 0;
     for (int biome = 0; biome < numBiomes; ++biome ) {
         for (int i = 0; i < textureResolution; i++) {
             float t = float(i) / (textureResolution - 1.0f);
-      
             glm::vec4 gradientcollum = ElevationColor(t , node->colorGenerators->biomes[biome].coloursettings.colour);// node->colorSettings.biome.coloursettings.colour
-            glm::vec4 tintcol = node->colorGenerators->biomes[biome].tint;
-           
+            glm::vec4 tintcol = node->colorGenerators->biomes[biome].tint;      
             colour[colorindex] = gradientcollum * (1 - node->colorGenerators->biomes[biome].tintpercent) + tintcol * node->colorGenerators->biomes[biome].tintpercent;
-            colorindex++;
-            
+            colorindex++;   
         }
     }
-
     GLuint textureID;
     glGenTextures(1, &textureID);
     glBindTexture(GL_TEXTURE_2D, textureID);
@@ -197,13 +191,7 @@ void mouseCallback(GLFWwindow* window, double x, double y) {
 // };
 // LightSource lightSources[/*Put number of light sources you want here*/];
 
-
-
-
-
-
 void DefultPlanet(SceneNode* node) {
-
 
     ShapeSettings shapeSettings;
     shapeSettings.noiselayer[0] = new NoiseLayer();
@@ -267,15 +255,15 @@ void DefultPlanet(SceneNode* node) {
     biome = colors->biomes[1];
     biome.tint = glm::vec4(1);
     biome.coloursettings.colour = {
-       {0.00f, glm::vec4(0, 0, 102, 255)}, // Deepsea
-    {0.18f, glm::vec4(30, 144, 255, 255)}, // Icy water
-    {0.20f, glm::vec4(70, 130, 180, 255)}, // Ice
-    {0.21f, glm::vec4(255, 250, 250, 255)}, // Snowy
-    {0.30f, glm::vec4(240, 248, 255, 255)}, // Light snow
-    {0.40f, glm::vec4(205, 133, 63, 255)}, // Bare ground
-    {0.50f, glm::vec4(139, 69, 19, 255)}, // Rocky ground
-    {0.80f, glm::vec4(150, 150, 150, 255)}, // High rocky terrain
-    {0.95f, glm::vec4(255, 255, 255, 255)}  // Mountain top
+        {0.00f, glm::vec4(0, 0, 102, 255)}, // Deepsea
+        {0.18f, glm::vec4(30, 144, 255, 255)}, // Icy water
+        {0.20f, glm::vec4(70, 130, 180, 255)}, // Ice
+        {0.21f, glm::vec4(255, 250, 250, 255)}, // Snowy
+        {0.30f, glm::vec4(240, 248, 255, 255)}, // Light snow
+        {0.40f, glm::vec4(205, 133, 63, 255)}, // Bare ground
+        {0.50f, glm::vec4(139, 69, 19, 255)}, // Rocky ground
+        {0.80f, glm::vec4(150, 150, 150, 255)}, // High rocky terrain
+        {0.95f, glm::vec4(255, 255, 255, 255)}  // Mountain top
     };
     biome.startheight = 0.002f;
     colors->biomes[1] = biome;
@@ -289,15 +277,15 @@ void DefultPlanet(SceneNode* node) {
     biome.tint = glm::vec4(1);
     biome.startheight = 0.50f;
     biome.coloursettings.colour = {
-    {0.00f, glm::vec4(0, 0, 102, 255)}, // Deepsea
-    { 0.18f, glm::vec4(25, 25, 112, 255) }, // Shallow water
-    { 0.20f, glm::vec4(218, 165, 32, 255) }, // Beach
-    { 0.30f, glm::vec4(244, 164, 96, 255) }, // Light sand
-    { 0.40f, glm::vec4(210, 180, 140, 255) }, // Sand
-    { 0.50f, glm::vec4(139, 69, 19, 255) }, // Rocky ground
-    { 0.60f, glm::vec4(160, 82, 45, 255) }, // Red rock
-    { 0.80f, glm::vec4(128, 128, 0, 255) }, // Sparse vegetation
-    { 0.95f, glm::vec4(105, 105, 105, 255) }  // Mountain top
+        { 0.00f, glm::vec4(0, 0, 102, 255)}, // Deepsea
+        { 0.18f, glm::vec4(25, 25, 112, 255) }, // Shallow water
+        { 0.20f, glm::vec4(218, 165, 32, 255) }, // Beach
+        { 0.30f, glm::vec4(244, 164, 96, 255) }, // Light sand
+        { 0.40f, glm::vec4(210, 180, 140, 255) }, // Sand
+        { 0.50f, glm::vec4(139, 69, 19, 255) }, // Rocky ground
+        { 0.60f, glm::vec4(160, 82, 45, 255) }, // Red rock
+        { 0.80f, glm::vec4(128, 128, 0, 255) }, // Sparse vegetation
+        { 0.95f, glm::vec4(105, 105, 105, 255) }  // Mountain top
     };
     colors->biomes[3] = biome;
 
@@ -334,6 +322,7 @@ void DefultPlanet(SceneNode* node) {
     node->colorGenerators = colors;
     node->change = true;
     GetElevationColorMap(node);
+    printf("\nnumber of biomes: %d\n", node->colorGenerators->numbiomes );
 }
 
 void DefultMoon(SceneNode* node) {
@@ -348,31 +337,22 @@ void DefultMoon(SceneNode* node) {
     shapeSettings.noiselayer[2] = new NoiseLayer();
     shapeSettings.noiselayer[2]->filter = std::make_unique<RidgidNoisefilter>();
     node->shapesettings = shapeSettings;
-    ColourGenerator* colors = new ColourGenerator(2);
-
+    ColourGenerator* colors = new ColourGenerator(1);
+    colors->filter->noiseSetting.strength = 1;
     BiomeSettings biome = colors->biomes[0];
     biome.tint = glm::vec4(1);
     biome.startheight = 0.0f;
     biome.coloursettings.colour = {
-        {0.00f, glm::vec4(40, 40, 40, 255)}, // Dark moon surface
-        {0.50f, glm::vec4(80, 80, 80, 255)}, // Medium gray
-        {1.00f, glm::vec4(130, 130, 130, 255)} // Lighter gray
+        {0.00f, glm::vec4(0, 0, 0, 255)}, // Light gray
+        {0.50f, glm::vec4(180, 180, 180, 255)}, // Lighter gray
+        {0.00f, glm::vec4(60, 40, 40, 255)} 
     };
     colors->biomes[0] = biome;
-
-    biome = colors->biomes[1];
-    biome.tint = glm::vec4(1);
-    biome.startheight = 0.5f;
-    biome.coloursettings.colour = {
-        {0.00f, glm::vec4(150, 150, 150, 255)}, // Light gray
-        {0.50f, glm::vec4(180, 180, 180, 255)}, // Lighter gray
-        {1.00f, glm::vec4(210, 210, 210, 255)} // Almost white
-    };
-    colors->biomes[1] = biome;
 
     node->colorGenerators = colors;
     node->change = true;
     GetElevationColorMap(node);
+    printf("\nmoon: number of biomes: %d\n", node->colorGenerators->numbiomes);
 }
 
 void DefaultAsteroid(SceneNode* node) {
@@ -395,6 +375,7 @@ void DefaultAsteroid(SceneNode* node) {
     biome.tint = glm::vec4(1);
     biome.startheight = 0.0f;
     biome.coloursettings.colour = {
+          {0.00f, glm::vec4(60, 40, 40, 255)},
         {0.00f, glm::vec4(60, 40, 40, 255)}, // Dark brown
         {0.50f, glm::vec4(100, 70, 70, 255)}, // Medium brown
         {1.00f, glm::vec4(140, 100, 100, 255)} // Lighter brown
@@ -414,6 +395,7 @@ void DefaultAsteroid(SceneNode* node) {
     node->colorGenerators = colors;
     node->change = true;
     GetElevationColorMap(node);
+    printf("\nastroid: number of biomes: %d\n", node->colorGenerators->numbiomes);
 }
 
 void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
@@ -422,8 +404,6 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
         return;
     }
     
-
-
     //printf(" settings:%g ", shapeSettings.noiseSettings.strength);
     options = gameOptions;
 
@@ -437,14 +417,14 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     shader->makeBasicShader("../res/shaders/simple.vert", "../res/shaders/simple.frag");
     shader->activate();
     
-
     // Create meshes
     
     Mesh pad = sphereCube(padDimensions, glm::vec2(30, 30), true, false, glm::vec3(1), 10.0, cameraPosition);
     Mesh box = cube(boxDimensions, glm::vec2(30), true, true);
     Mesh moon = sphereCube(padDimensions, glm::vec2(30, 30), true, false, glm::vec3(1), 10.0, cameraPosition);
+    Mesh astroid = sphereCube(padDimensions, glm::vec2(30, 30), true, false, glm::vec3(1), 10.0, cameraPosition);
+    Mesh sun = generateSphere(1.0, 40, 40);
     
-
     // Fill buffers
     int textureid = GetLoadedImage(ASCII);
     std::string text = "Start";
@@ -454,25 +434,34 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     // Construct scene
     rootNode = createSceneNode();
     boxNode  = createSceneNode();
-
+    SceneNode* sunNode = createSceneNode();
+    
 
     padNode  = createSceneNode();
     padNode->vertices = pad.vertices;
     padNode->originalVertices = pad.vertices;
     DefultPlanet(padNode);
     padNode->position.x += 10;
+
     moonNode = createSceneNode();
     moonNode->originalVertices = moon.vertices;
     moonNode->vertices = moon.vertices;
     DefultMoon(moonNode);
+    moonNode->position = { 20, 10, 30 };
+
+    astroidNode = createSceneNode();
+    astroidNode->originalVertices = astroid.vertices;
+    astroidNode->vertices = astroid.vertices;
+    DefaultAsteroid(astroidNode);
+    astroidNode->position = { 10, 10, 30 };
 
     textureNode = createSceneNode();
     generateBufferWhitNode(pad, *padNode);
     generateBufferWhitNode(box, *boxNode);
+    generateBufferWhitNode(sun, *sunNode);
     generateBufferWhitNode(texture, *textureNode);
     generateBufferWhitNode(moon, *moonNode);
-    
-    
+    generateBufferWhitNode(moon, *astroidNode);
     
     lightLeftNode = createSceneNode();
 
@@ -481,23 +470,26 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     /// oblig 2 texture
     textureNode->nodeType = GEOMETRY2D;
     boxNode->nodeType = NORMAL_MAPPED_GEOMETRY;
+    sunNode->nodeType = SPOT_LIGHT;
 
     lightLeftNode->id = 2;
     textureNode->id = 9;
 
     lightLeftNode->color = glm::vec3(255.0f/255, 255.0f / 255, 255/255);
-
     lightLeftNode->position = { 10, 20, 40 };
-    moonNode->position = { 20, 10, 30 };
+    sunNode->position = lightLeftNode->position;
 
     textureNode->position = { float(windowWidth/2.0)-(29*3), float(windowHeight / 2.0), 0.0};
     textureNode->scale = glm::vec3(300.0);
 
     rootNode->children.push_back(boxNode);
-    rootNode->children.push_back(padNode);
-    rootNode->children.push_back(textureNode);
+    
+    rootNode->children.push_back(astroidNode);
     rootNode->children.push_back(moonNode);
+    rootNode->children.push_back(padNode);
     boxNode->children.push_back(lightLeftNode);
+    lightLeftNode->children.push_back(sunNode);
+    rootNode->children.push_back(textureNode);
 
     /// oblig 2
     textureNode->textureID = textureid;
@@ -507,8 +499,6 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     boxNode->textureRoughness = GetLoadedImage(brick03_rgh);
    
 
-
-    
     /*padNode->textureID = GetLoadedImage(world);*/
     getTimeDeltaSeconds();
 
@@ -634,7 +624,16 @@ void updateFrame(GLFWwindow* window) {
     processInput(window, timeDelta, moonNode);
 
     //float cameraPadDistance = distance(cameraPosition, padNode->position);
-  
+
+    //float radius = 10.0f; // The radius of the circle
+    //float speed = 10.0f;  // The speed of the movement
+
+    //float angle = timeDelta * speed;
+
+    //astroidNode->position.x = -radius * cos(angle);
+    //astroidNode->position.y = sin(angle) * radius;
+    //astroidNode->position.z = astroidNode->position.z;
+
     // Set up camera
     glm::vec3 camera_position = cameraPosition;
     glm::vec3 camera_target(0.0f, 0.0f, -1.0f);
@@ -645,7 +644,7 @@ void updateFrame(GLFWwindow* window) {
     float field_of_view = 80.0f;
     float aspect_ratio = float(windowWidth) / float(windowHeight);
     float near_clip_distance = 0.1f;
-    float far_clip_distance = 350.0f;
+    float far_clip_distance = 3500.0f;
     glm::mat4 projection_matrix = glm::perspective(glm::radians(field_of_view), aspect_ratio, near_clip_distance, far_clip_distance);
     // Set up model
     glm::mat4 model_matrix = glm::mat4(1.0f);
@@ -722,9 +721,10 @@ void renderNode(SceneNode* node) {
     case GEOMETRY:
         if (node->vertexArrayObjectID != -1) {
             double timeDelta = getTimeDeltaSeconds();
-            std::vector<glm::vec1> uv(node->originalVertices.size());
+            
             //noiseSettings.centre.x += (sin(timeDelta * frequency) * amplitude);
             if(node->change){
+                std::vector<glm::vec1> uv(node->originalVertices.size());
                 node->shapesettings.minmax.Min = std::numeric_limits<float>::max();
                 node->shapesettings.minmax.Max = std::numeric_limits<float>::lowest();
                 for (size_t i = 0; i < node->originalVertices.size(); ++i) {
@@ -753,7 +753,6 @@ void renderNode(SceneNode* node) {
                 glBindBuffer(GL_ARRAY_BUFFER, node->vertexBufferID);
                 glBufferData(GL_ARRAY_BUFFER, node->vertices.size() * sizeof(glm::vec3), node->vertices.data(), GL_STATIC_DRAW);
                 node->change = false;
-                
             }
         }
         if (node->vertexArrayObjectID != -1) {
@@ -763,11 +762,9 @@ void renderNode(SceneNode* node) {
                 GLint startheightLocation = shader->getUniformFromName(uniformName.c_str());
                 glUniform1f(startheightLocation, node->colorGenerators->biomes[i].startheight);
             }
-            glUniform1i(10, static_cast<GLint>(node->colorGenerators->biomes.size()));
+            glUniform1i(10, static_cast<GLint>(node->colorGenerators->numbiomes));
             glUniform3f(11, node->position.x, node->position.y, node->position.z);
-            glUniform2f(8, node->shapesettings.minmax.Min, node->shapesettings.minmax.Max);/*
-            glm::vec3 position = node->currentTransformationMatrix * glm::vec4(0, 0, 0, 1);
-            glUniform3f(16, position.x, position.y, position.z);*/
+            glUniform2f(8, node->shapesettings.minmax.Min, node->shapesettings.minmax.Max);
             glUniform1i(6, 2);
             glBindVertexArray(node->vertexArrayObjectID);
             glBindTextureUnit(0, node->textureID);
@@ -778,11 +775,11 @@ void renderNode(SceneNode* node) {
         }
         break;
         case POINT_LIGHT: 
-
-            
             break;
-        case SPOT_LIGHT: break;
-
+        case SPOT_LIGHT: 
+            glBindVertexArray(node->vertexArrayObjectID);
+            glDrawElements(GL_TRIANGLES, node->VAOIndexCount, GL_UNSIGNED_INT, nullptr);
+            break;
         case NORMAL_MAPPED_GEOMETRY:
 
             if (node->vertexArrayObjectID != -1) {
@@ -796,7 +793,6 @@ void renderNode(SceneNode* node) {
             break;
         case GEOMETRY2D:
             texture2dShader->activate();
-
             /* glm::vec3 texture = node->currentTransformationMatrix * glm::vec4(0, 0, 0, 1);
             glUniform3f(node->id, texture.x, texture.y, texture.z);*/
             glm::mat4 P = glm::ortho(0.0f, float(windowWidth), 0.0f, float(windowHeight), -1.0f, 350.f);
@@ -804,13 +800,10 @@ void renderNode(SceneNode* node) {
             glUniformMatrix4fv(3, 1, GL_FALSE, glm::value_ptr(node->currentTransformationMatrix));
             glUniformMatrix4fv(4, 1, GL_FALSE, glm::value_ptr(P));
             glUniformMatrix4fv(5, 1, GL_FALSE, glm::value_ptr(V));
-
             glUniform1i(6, 0);
             glBindVertexArray(node->vertexArrayObjectID);
             glBindTextureUnit(0, node->textureID);
             glDrawElements(GL_TRIANGLES, node->VAOIndexCount, GL_UNSIGNED_INT, nullptr);
-
-
             shader->activate();
             break;
     }

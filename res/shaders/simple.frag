@@ -115,29 +115,20 @@ float BiomePercentFromPoint(float heightPercent) {
 void main()
 {
     float distanceFromCenter = distance(vpos, center);
-    
-    
-    
-    vec4 pixelcolor;
-    
-    
+    float elevation = inverseLerp(minmax.x, minmax.y, distanceFromCenter);
+    float normalizedY = (vpos.y - (center.y - distanceFromCenter)) / (2.0 * distanceFromCenter);
+    normalizedY += v_noise.x;
+    vec4 pixelcolor = texture(elevationcolor, vec2(elevation, 0.3f/*BiomePercentFromPoint(normalizedY)*/));
+////    pixelcolor = vec4(vec3(normalizedY), 1);
+//    if(numBiomes < 2){
+//        pixelcolor = vec4(vec3(1,0,1), 1);}
     vec3 normal; 
     if (normal_geo == 1 ) {
         normal =   normalize(TBN *(texture( normal_texture , textureCoordinates) * 2 -1).xyz);
     }  else {
-        normal =  normalize(  vec3(1));
-            
-            float elevation = inverseLerp(minmax.x, minmax.y, distanceFromCenter);
-            float normalizedY = (vpos.y - (center.y - distanceFromCenter)) / (2.0 * distanceFromCenter);
-
-            normalizedY += v_noise.x;
-            pixelcolor = texture(elevationcolor, vec2(elevation, BiomePercentFromPoint(normalizedY)));
-           
-
-
+        normal =  normalize(vec3(1));
     }
-//    if(distanceFromCenter < 50)
-//      pixelcolor = vec4(1);
+
     vec4 ballVec4 =  ( V ) * vec4(ballpos, 1.0f);
     vec3 homo_ballPos = vec3(ballVec4) / ballVec4.w;
 
@@ -186,15 +177,12 @@ void main()
 
     
     float dilter = dither(textureCoordinates);
-    
-//    vec4 nonFilteredColor = texture(filterlessPlanetTexture, textureCoordinates);
-
 
     if (minmax.y < distanceFromCenter){
         vec4 diftexture = texture(diffusetexture, textureCoordinates);
         color = vec4((diftexture.xyz*diffuseTotal)+dilter, diftexture.w) ;
     } else{
-        color = vec4(((pixelcolor.xyz)*diffuseTotal)+dilter, pixelcolor.w) ;
+        color = vec4(((pixelcolor.xyz)*diffuseTotal)+dilter, pixelcolor.w);
     }
 
     }
