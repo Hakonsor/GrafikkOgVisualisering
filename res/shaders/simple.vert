@@ -48,7 +48,7 @@ void main()
         bitangent_out,
         normal_out
     );
-     v_noise = aNoise;
+    v_noise = aNoise;
     vec4 vertpos4 = (  V * M ) * vec4(position, 1.0f);
     vertPos = vec3(vertpos4) / vertpos4.w;
     textureCoordinates_out = textureCoordinates_in;

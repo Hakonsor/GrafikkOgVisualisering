@@ -118,10 +118,8 @@ void main()
     float elevation = inverseLerp(minmax.x, minmax.y, distanceFromCenter);
     float normalizedY = (vpos.y - (center.y - distanceFromCenter)) / (2.0 * distanceFromCenter);
     normalizedY += v_noise.x;
-    vec4 pixelcolor = texture(elevationcolor, vec2(elevation, 0.3f/*BiomePercentFromPoint(normalizedY)*/));
-////    pixelcolor = vec4(vec3(normalizedY), 1);
-//    if(numBiomes < 2){
-//        pixelcolor = vec4(vec3(1,0,1), 1);}
+    vec4 pixelcolor = texture(elevationcolor, vec2(elevation, BiomePercentFromPoint(normalizedY)));
+
     vec3 normal; 
     if (normal_geo == 1 ) {
         normal =   normalize(TBN *(texture( normal_texture , textureCoordinates) * 2 -1).xyz);

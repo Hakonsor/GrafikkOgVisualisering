@@ -441,7 +441,7 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     padNode->vertices = pad.vertices;
     padNode->originalVertices = pad.vertices;
     DefultPlanet(padNode);
-    padNode->position.x += 10;
+    /*padNode->position.x += 10;*/
 
     moonNode = createSceneNode();
     moonNode->originalVertices = moon.vertices;
@@ -476,19 +476,25 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     textureNode->id = 9;
 
     lightLeftNode->color = glm::vec3(255.0f/255, 255.0f / 255, 255/255);
-    lightLeftNode->position = { 10, 20, 40 };
+    lightLeftNode->position = { 10, 10, 50 };
     sunNode->position = lightLeftNode->position;
 
     textureNode->position = { float(windowWidth/2.0)-(29*3), float(windowHeight / 2.0), 0.0};
     textureNode->scale = glm::vec3(300.0);
 
     rootNode->children.push_back(boxNode);
+    rootNode->children.push_back(padNode);
     
     rootNode->children.push_back(astroidNode);
-    rootNode->children.push_back(moonNode);
-    rootNode->children.push_back(padNode);
+    rootNode->children.push_back(moonNode); // Moon Gets the shadow. only support for one shawdow so far
     boxNode->children.push_back(lightLeftNode);
-    lightLeftNode->children.push_back(sunNode);
+    
+    /*rootNode->children.push_back(astroidNode);*/
+   
+    
+    
+    
+    /*lightLeftNode->children.push_back(sunNode);*/
     rootNode->children.push_back(textureNode);
 
     /// oblig 2
@@ -611,6 +617,20 @@ void processInput(GLFWwindow* window,float timeDelta, SceneNode* node) {
         printf("\n3 off: %B", shapeSettings.noiselayer[2]->enable);
     }
 
+
+    if (glfwGetKey(window, GLFW_KEY_0) == GLFW_PRESS) {
+        lightLeftNode->position.x -= timeDelta * 100.0;
+    }
+    if (glfwGetKey(window, GLFW_KEY_9) == GLFW_PRESS) {
+        lightLeftNode->position.x += timeDelta * 100.0;
+    }
+    if (glfwGetKey(window, GLFW_KEY_8) == GLFW_PRESS) {
+        lightLeftNode->position.z -= timeDelta * 100.0;
+    }
+    if (glfwGetKey(window, GLFW_KEY_7) == GLFW_PRESS) {
+        lightLeftNode->position.z += timeDelta * 100.0;
+    }
+
 }
 
 
@@ -622,18 +642,7 @@ void updateFrame(GLFWwindow* window) {
     double timeDelta = getTimeDeltaSeconds();
 
     processInput(window, timeDelta, moonNode);
-
-    //float cameraPadDistance = distance(cameraPosition, padNode->position);
-
-    //float radius = 10.0f; // The radius of the circle
-    //float speed = 10.0f;  // The speed of the movement
-
-    //float angle = timeDelta * speed;
-
-    //astroidNode->position.x = -radius * cos(angle);
-    //astroidNode->position.y = sin(angle) * radius;
-    //astroidNode->position.z = astroidNode->position.z;
-
+   
     // Set up camera
     glm::vec3 camera_position = cameraPosition;
     glm::vec3 camera_target(0.0f, 0.0f, -1.0f);
