@@ -29,14 +29,13 @@ enum KeyFrameAction {
 #include <timestamps.h>
 
 
-
-
-ShapeSettings shapeSettings;
-NoiseSettings noiseSettings;
+ShapeSettings selectSettings;
 
 double padPositionX = 0;
 double padPositionZ = 0;
 bool change = true;
+bool moonchange = true;
+bool astroidchange = true;
 unsigned int currentKeyFrame = 0;
 unsigned int previousKeyFrame = 0;
 
@@ -48,14 +47,10 @@ float rotasjonsomething = 0.0;
 
 SceneNode* rootNode;
 SceneNode* boxNode;
-SceneNode* ballNode;
 SceneNode* padNode;
+SceneNode* moonNode;
 
 SceneNode* lightLeftNode;
-SceneNode* lightRightNode;
-SceneNode* lightPadNode;
-
-SceneNode* ballNode2;
 
 SceneNode* textureNode;
 double ballRadius = 3.0f;
@@ -175,8 +170,7 @@ double mouseSensitivity = 1.0;
 double lastMouseX = windowWidth / 2;
 double lastMouseY = windowHeight / 2;
 
-std::vector<glm::vec3> originalVertices;
-Mesh pad;
+//Mesh pad;
 
 void mouseCallback(GLFWwindow* window, double x, double y) {
     int windowWidth, windowHeight;
@@ -208,16 +202,10 @@ void mouseCallback(GLFWwindow* window, double x, double y) {
 
 
 
+void DefultPlanet(SceneNode* node) {
 
 
-
-
-void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
-    buffer = new sf::SoundBuffer();
-    if (!buffer->loadFromFile("../res/Hall of the Mountain King.ogg")) {
-        return;
-    }
-    
+    ShapeSettings shapeSettings;
     shapeSettings.noiselayer[0] = new NoiseLayer();
     shapeSettings.noiselayer[0]->filter = std::make_unique<SimpleNoiseFilter>();
     shapeSettings.noiselayer[1] = new NoiseLayer();
@@ -258,84 +246,18 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     shapeSettings.noiselayer[2]->filter->noiseSetting = noise;
     shapeSettings.noiselayer[2]->useFisrtLayerAsMask = false;
 
-    //printf(" settings:%g ", shapeSettings.noiseSettings.strength);
-    options = gameOptions;
+    node->shapesettings = shapeSettings;
 
-    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
-    glfwSetCursorPosCallback(window, mouseCallback);
-
-    texture2dShader = new Gloom::Shader();
-    texture2dShader->makeBasicShader("../res/shaders/texture.vert", "../res/shaders/texture.frag");
-    
-    shader = new Gloom::Shader();
-    shader->makeBasicShader("../res/shaders/simple.vert", "../res/shaders/simple.frag");
-    shader->activate();
-    
-
-    // Create meshes
-    
-    pad = sphereCube(padDimensions, glm::vec2(30, 30), true, false, glm::vec3(1), 10.0, cameraPosition);
-    originalVertices = pad.vertices;
-    Mesh box = cube(boxDimensions, glm::vec2(30), true, true);
-    
-    // Fill buffers
-
-    int textureid = GetLoadedImage(ASCII);
-    std::string text = "Start";
-    Mesh texture = generateTextGeometryBuffer(text, 39.0 / 29.0, 0.5);
-    unsigned int textureVAO = generateBuffer(texture);
-
-    // Construct scene
-    rootNode = createSceneNode();
-    boxNode  = createSceneNode();
-    padNode  = createSceneNode();
-    textureNode = createSceneNode();
-    generateBufferWhitNode(pad, *padNode);
-    generateBufferWhitNode(box, *boxNode);
-    generateBufferWhitNode(texture, *textureNode);
-    
-    
-    lightLeftNode = createSceneNode();
-
-    lightLeftNode->nodeType = POINT_LIGHT;
-
-    /// oblig 2 texture
-    textureNode->nodeType = GEOMETRY2D;
-    boxNode->nodeType = NORMAL_MAPPED_GEOMETRY;
-
-    lightLeftNode->id = 2;
-    textureNode->id = 9;
-
-    lightLeftNode->color = glm::vec3(155.0f/255, 155.0f / 255, 155/255);
-
-
-    lightLeftNode->position = { 10, 20, 40 };
-
-    textureNode->position = { float(windowWidth/2.0)-(29*3), float(windowHeight / 2.0), 0.0};
-    textureNode->scale = glm::vec3(300.0);
-
-    rootNode->children.push_back(boxNode);
-    rootNode->children.push_back(padNode);
-    rootNode->children.push_back(textureNode);
-
-    boxNode->children.push_back(lightLeftNode);
-
-    /// oblig 2
-    textureNode->textureID = textureid;
-
-    boxNode->textureID = GetLoadedImage(brick_diffuse);
-    boxNode->textureNormal = GetLoadedImage(brick_normalmap);
-    boxNode->textureRoughness = GetLoadedImage(brick03_rgh);
     ColourGenerator* colors = new ColourGenerator(7);
-    colors->filter->noiseSetting.strength =1;
+    colors->filter->noiseSetting.strength = 1;
     //colors->noiseOffset = 0.1;
     //colors->noiseStrength = 0.1;
 
     BiomeSettings biome = colors->biomes[0];
-    
+
     biome.tint = glm::vec4(0);
     biome.startheight = 0.0001f;
-    biome.coloursettings.colour =  {
+    biome.coloursettings.colour = {
         {0.00f, glm::vec4(255, 255, 255, 255)},
         {0.80f, glm::vec4(150, 150, 150, 255)}, // High rocky terrain
         {0.95f, glm::vec4(255, 255, 255, 255)}  // Mountain top
@@ -365,7 +287,7 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
 
     biome = colors->biomes[3];
     biome.tint = glm::vec4(1);
-    biome.startheight = 0.50f; 
+    biome.startheight = 0.50f;
     biome.coloursettings.colour = {
     {0.00f, glm::vec4(0, 0, 102, 255)}, // Deepsea
     { 0.18f, glm::vec4(25, 25, 112, 255) }, // Shallow water
@@ -409,10 +331,184 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
         {0.95f, glm::vec4(255, 255, 255, 255)}  // Mountain top
     };
     colors->biomes[6] = biome;
+    node->colorGenerators = colors;
+    node->change = true;
+    GetElevationColorMap(node);
+}
 
-    padNode->colorGenerators = colors;
-    GetElevationColorMap(padNode);
-    printf("\nelecationid: %d", padNode->elevationTextureID);
+void DefultMoon(SceneNode* node) {
+    ShapeSettings shapeSettings;
+    shapeSettings.planetRaduis = 1;
+
+
+    shapeSettings.noiselayer[0] = new NoiseLayer();
+    shapeSettings.noiselayer[0]->filter = std::make_unique<SimpleNoiseFilter>();
+    shapeSettings.noiselayer[1] = new NoiseLayer();
+    shapeSettings.noiselayer[1]->filter = std::make_unique<SimpleNoiseFilter>();
+    shapeSettings.noiselayer[2] = new NoiseLayer();
+    shapeSettings.noiselayer[2]->filter = std::make_unique<RidgidNoisefilter>();
+    node->shapesettings = shapeSettings;
+    ColourGenerator* colors = new ColourGenerator(2);
+
+    BiomeSettings biome = colors->biomes[0];
+    biome.tint = glm::vec4(1);
+    biome.startheight = 0.0f;
+    biome.coloursettings.colour = {
+        {0.00f, glm::vec4(40, 40, 40, 255)}, // Dark moon surface
+        {0.50f, glm::vec4(80, 80, 80, 255)}, // Medium gray
+        {1.00f, glm::vec4(130, 130, 130, 255)} // Lighter gray
+    };
+    colors->biomes[0] = biome;
+
+    biome = colors->biomes[1];
+    biome.tint = glm::vec4(1);
+    biome.startheight = 0.5f;
+    biome.coloursettings.colour = {
+        {0.00f, glm::vec4(150, 150, 150, 255)}, // Light gray
+        {0.50f, glm::vec4(180, 180, 180, 255)}, // Lighter gray
+        {1.00f, glm::vec4(210, 210, 210, 255)} // Almost white
+    };
+    colors->biomes[1] = biome;
+
+    node->colorGenerators = colors;
+    node->change = true;
+    GetElevationColorMap(node);
+}
+
+void DefaultAsteroid(SceneNode* node) {
+    ShapeSettings shapeSettings;
+    shapeSettings.planetRaduis = 0.5; // Smaller radius for asteroid
+
+    // Adjust the noise layers to create a more asteroid-like shape
+    shapeSettings.noiselayer[0] = new NoiseLayer();
+    shapeSettings.noiselayer[0]->filter = std::make_unique<RidgidNoisefilter>();
+    shapeSettings.noiselayer[1] = new NoiseLayer();
+    shapeSettings.noiselayer[1]->filter = std::make_unique<RidgidNoisefilter>();
+    shapeSettings.noiselayer[2] = new NoiseLayer();
+    shapeSettings.noiselayer[2]->filter = std::make_unique<SimpleNoiseFilter>();
+
+    node->shapesettings = shapeSettings;
+
+    ColourGenerator* colors = new ColourGenerator(2);
+
+    BiomeSettings biome = colors->biomes[0];
+    biome.tint = glm::vec4(1);
+    biome.startheight = 0.0f;
+    biome.coloursettings.colour = {
+        {0.00f, glm::vec4(60, 40, 40, 255)}, // Dark brown
+        {0.50f, glm::vec4(100, 70, 70, 255)}, // Medium brown
+        {1.00f, glm::vec4(140, 100, 100, 255)} // Lighter brown
+    };
+    colors->biomes[0] = biome;
+
+    biome = colors->biomes[1];
+    biome.tint = glm::vec4(1);
+    biome.startheight = 0.5f;
+    biome.coloursettings.colour = {
+        {0.00f, glm::vec4(130, 100, 100, 255)}, // Light brown
+        {0.50f, glm::vec4(160, 130, 130, 255)}, // Lighter brown
+        {1.00f, glm::vec4(190, 160, 160, 255)} // Almost white-brown
+    };
+    colors->biomes[1] = biome;
+
+    node->colorGenerators = colors;
+    node->change = true;
+    GetElevationColorMap(node);
+}
+
+void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
+    buffer = new sf::SoundBuffer();
+    if (!buffer->loadFromFile("../res/Hall of the Mountain King.ogg")) {
+        return;
+    }
+    
+
+
+    //printf(" settings:%g ", shapeSettings.noiseSettings.strength);
+    options = gameOptions;
+
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+    glfwSetCursorPosCallback(window, mouseCallback);
+
+    texture2dShader = new Gloom::Shader();
+    texture2dShader->makeBasicShader("../res/shaders/texture.vert", "../res/shaders/texture.frag");
+    
+    shader = new Gloom::Shader();
+    shader->makeBasicShader("../res/shaders/simple.vert", "../res/shaders/simple.frag");
+    shader->activate();
+    
+
+    // Create meshes
+    
+    Mesh pad = sphereCube(padDimensions, glm::vec2(30, 30), true, false, glm::vec3(1), 10.0, cameraPosition);
+    Mesh box = cube(boxDimensions, glm::vec2(30), true, true);
+    Mesh moon = sphereCube(padDimensions, glm::vec2(30, 30), true, false, glm::vec3(1), 10.0, cameraPosition);
+    
+
+    // Fill buffers
+    int textureid = GetLoadedImage(ASCII);
+    std::string text = "Start";
+    Mesh texture = generateTextGeometryBuffer(text, 39.0 / 29.0, 0.5);
+    unsigned int textureVAO = generateBuffer(texture);
+
+    // Construct scene
+    rootNode = createSceneNode();
+    boxNode  = createSceneNode();
+
+
+    padNode  = createSceneNode();
+    padNode->vertices = pad.vertices;
+    padNode->originalVertices = pad.vertices;
+    DefultPlanet(padNode);
+    padNode->position.x += 10;
+    moonNode = createSceneNode();
+    moonNode->originalVertices = moon.vertices;
+    moonNode->vertices = moon.vertices;
+    DefultMoon(moonNode);
+
+    textureNode = createSceneNode();
+    generateBufferWhitNode(pad, *padNode);
+    generateBufferWhitNode(box, *boxNode);
+    generateBufferWhitNode(texture, *textureNode);
+    generateBufferWhitNode(moon, *moonNode);
+    
+    
+    
+    lightLeftNode = createSceneNode();
+
+    lightLeftNode->nodeType = POINT_LIGHT;
+
+    /// oblig 2 texture
+    textureNode->nodeType = GEOMETRY2D;
+    boxNode->nodeType = NORMAL_MAPPED_GEOMETRY;
+
+    lightLeftNode->id = 2;
+    textureNode->id = 9;
+
+    lightLeftNode->color = glm::vec3(255.0f/255, 255.0f / 255, 255/255);
+
+    lightLeftNode->position = { 10, 20, 40 };
+    moonNode->position = { 20, 10, 30 };
+
+    textureNode->position = { float(windowWidth/2.0)-(29*3), float(windowHeight / 2.0), 0.0};
+    textureNode->scale = glm::vec3(300.0);
+
+    rootNode->children.push_back(boxNode);
+    rootNode->children.push_back(padNode);
+    rootNode->children.push_back(textureNode);
+    rootNode->children.push_back(moonNode);
+    boxNode->children.push_back(lightLeftNode);
+
+    /// oblig 2
+    textureNode->textureID = textureid;
+
+    boxNode->textureID = GetLoadedImage(brick_diffuse);
+    boxNode->textureNormal = GetLoadedImage(brick_normalmap);
+    boxNode->textureRoughness = GetLoadedImage(brick03_rgh);
+   
+
+
+    
     /*padNode->textureID = GetLoadedImage(world);*/
     getTimeDeltaSeconds();
 
@@ -421,8 +517,8 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     std::cout << "Ready. Click to start!" << std::endl;
 }
 int celeplanet = 0;
-void processInput(GLFWwindow* window,float timeDelta) {
-
+void processInput(GLFWwindow* window,float timeDelta, SceneNode* node) {
+    ShapeSettings shapeSettings = node->shapesettings;
     if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
         cameraPosition.x -= timeDelta * 100.0;
     }
@@ -461,67 +557,67 @@ void processInput(GLFWwindow* window,float timeDelta) {
     }
 
     if (glfwGetKey(window, GLFW_KEY_T) == GLFW_PRESS) {
-        shapeSettings.noiselayer[celeplanet]->filter->noiseSetting.minValue -= timeDelta;
-        change = true;
+        shapeSettings.noiselayer[celeplanet]->filter->noiseSetting.minValue -= 0.10;
+        node->change = true;
         printf("\nminvalue: %g", shapeSettings.noiselayer[celeplanet]->filter->noiseSetting.minValue);
     }
     if (glfwGetKey(window, GLFW_KEY_Y) == GLFW_PRESS) {
-        shapeSettings.noiselayer[celeplanet]->filter->noiseSetting.minValue += timeDelta;
-        change = true;
+        shapeSettings.noiselayer[celeplanet]->filter->noiseSetting.minValue += 0.10;
+        node->change = true;
         printf("\nminvalue: %g", shapeSettings.noiselayer[celeplanet]->filter->noiseSetting.minValue);
     }
     if (glfwGetKey(window, GLFW_KEY_G) == GLFW_PRESS) {
-        shapeSettings.noiselayer[celeplanet]->filter->noiseSetting.roughness -= (timeDelta);
-        change = true;
+        shapeSettings.noiselayer[celeplanet]->filter->noiseSetting.roughness -= 0.10;
+        node->change = true;
         printf("\nroughness: %g", shapeSettings.noiselayer[celeplanet]->filter->noiseSetting.roughness);
     }
     if (glfwGetKey(window, GLFW_KEY_H) == GLFW_PRESS) {
-        shapeSettings.noiselayer[celeplanet]->filter->noiseSetting.roughness += (timeDelta);
-        change = true;
+        shapeSettings.noiselayer[celeplanet]->filter->noiseSetting.roughness += 0.10;
+        node->change = true;
         printf("\nroughness: %g", shapeSettings.noiselayer[celeplanet]->filter->noiseSetting.roughness);
     }
     if (glfwGetKey(window, GLFW_KEY_O) == GLFW_PRESS) {
-        shapeSettings.noiselayer[celeplanet]->filter->noiseSetting.strength -= (timeDelta);
-        change = true;
+        shapeSettings.noiselayer[celeplanet]->filter->noiseSetting.strength -= 0.10;
+        node->change = true;
         printf("\nstrength: %g", shapeSettings.noiselayer[celeplanet]->filter->noiseSetting.strength);
     }
     if (glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS) {
-        shapeSettings.noiselayer[celeplanet]->filter->noiseSetting.strength += (timeDelta);
-        change = true;
+        shapeSettings.noiselayer[celeplanet]->filter->noiseSetting.strength += 0.10;
+        node->change = true;
         printf("\nstrength: %g", shapeSettings.noiselayer[celeplanet]->filter->noiseSetting.strength);
     }
 
     if (glfwGetKey(window, GLFW_KEY_X) == GLFW_PRESS) {
-        shapeSettings.noiselayer[celeplanet]->filter->noiseSetting.centre.x += (timeDelta)*10;
-        change = true;
+        shapeSettings.noiselayer[celeplanet]->filter->noiseSetting.centre.x += 0.10;
+        node->change = true;
     }
 
     if (glfwGetKey(window, GLFW_KEY_U) == GLFW_PRESS) {
-        shapeSettings.noiselayer[celeplanet]->filter->noiseSetting.persistence -= (timeDelta);
-        change = true;
+        shapeSettings.noiselayer[celeplanet]->filter->noiseSetting.persistence -= 0.10;
+        node->change = true;
         printf("\npersistence: %g", shapeSettings.noiselayer[celeplanet]->filter->noiseSetting.persistence);
     }
     if (glfwGetKey(window, GLFW_KEY_I) == GLFW_PRESS) {
-        shapeSettings.noiselayer[celeplanet]->filter->noiseSetting.persistence += (timeDelta);
-        change = true;
+        shapeSettings.noiselayer[celeplanet]->filter->noiseSetting.persistence += 0.10;
+        node->change = true;
         printf("\npersistence: %g", shapeSettings.noiselayer[celeplanet]->filter->noiseSetting.persistence);
     }
 
     if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS) {
         shapeSettings.noiselayer[0]->enable = !shapeSettings.noiselayer[0]->enable;
-        change = true;
+        node->change = true;
         printf("\n1 off: %B", shapeSettings.noiselayer[0]->enable);
     }
 
     if (glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS) {
         shapeSettings.noiselayer[1]->enable = !shapeSettings.noiselayer[1]->enable;
-        change = true;
+        node->change = true;
         printf("\n2 off: %B", shapeSettings.noiselayer[1]->enable);
     }
 
     if (glfwGetKey(window, GLFW_KEY_3) == GLFW_PRESS) {
         shapeSettings.noiselayer[2]->enable = !shapeSettings.noiselayer[2]->enable;
-        change = true;
+        node->change = true;
         printf("\n3 off: %B", shapeSettings.noiselayer[2]->enable);
     }
 
@@ -535,7 +631,7 @@ void updateFrame(GLFWwindow* window) {
 
     double timeDelta = getTimeDeltaSeconds();
 
-    processInput(window, timeDelta);
+    processInput(window, timeDelta, moonNode);
 
     //float cameraPadDistance = distance(cameraPosition, padNode->position);
   
@@ -584,13 +680,12 @@ void updateNodeTransformations(SceneNode* node, glm::mat4 transformationThusFar)
 
 
     switch (node->nodeType) {
-    case GEOMETRY:
-        if (node->id == padNode->id) {
+    case GEOMETRY:{
             // Send position of ball
             glm::vec3 shadow = node->currentTransformationMatrix * glm::vec4(0, 0, 0, 1);
-            glUniform3f(7, shadow.x, shadow.y, shadow.z);
-        }
+            glUniform3f(15, shadow.x, shadow.y, shadow.z);
         break;
+    }
     case POINT_LIGHT: {
         // Send position of and color of lights
         GLint location = shader->getUniformFromName("lights[" + std::to_string(node->id) + "].position");
@@ -625,58 +720,55 @@ void renderNode(SceneNode* node) {
     switch (node->nodeType) {
 
     case GEOMETRY:
-        if (node->vertexArrayObjectID == padNode->vertexArrayObjectID) {
+        if (node->vertexArrayObjectID != -1) {
             double timeDelta = getTimeDeltaSeconds();
-            std::vector<glm::vec1> uv(originalVertices.size());
+            std::vector<glm::vec1> uv(node->originalVertices.size());
             //noiseSettings.centre.x += (sin(timeDelta * frequency) * amplitude);
-            if(change){
-                for (size_t i = 0; i < originalVertices.size(); ++i) {
+            if(node->change){
+                node->shapesettings.minmax.Min = std::numeric_limits<float>::max();
+                node->shapesettings.minmax.Max = std::numeric_limits<float>::lowest();
+                for (size_t i = 0; i < node->originalVertices.size(); ++i) {
                     float elevation = 0;
                     float firstLayerValue = 0;
-                    if (shapeSettings.numberofnoiselayer > 0) {
-                        firstLayerValue = shapeSettings.noiselayer[0]->filter->NoiseFilter(originalVertices[i]);
-                        if (shapeSettings.noiselayer[0]->enable) {
+                    if (node->shapesettings.numberofnoiselayer > 0) {
+                        firstLayerValue = node->shapesettings.noiselayer[0]->filter->NoiseFilter(node->originalVertices[i]);
+                        if (node->shapesettings.noiselayer[0]->enable) {
                             elevation = firstLayerValue;
                         }
                     }
-                    for (int j = 1; j < shapeSettings.numberofnoiselayer; j++) {
-                        if (shapeSettings.noiselayer[j]->enable) {
-                            float mask = (shapeSettings.noiselayer[j]->useFisrtLayerAsMask) ? firstLayerValue : 1;
-                            elevation += shapeSettings.noiselayer[j]->filter->NoiseFilter(originalVertices[i]) * mask;
+                    for (int j = 1; j < node->shapesettings.numberofnoiselayer; j++) {
+                        if (node->shapesettings.noiselayer[j]->enable) {
+                            float mask = (node->shapesettings.noiselayer[j]->useFisrtLayerAsMask) ? firstLayerValue : 1;
+                            elevation += node->shapesettings.noiselayer[j]->filter->NoiseFilter(node->originalVertices[i]) * mask;
                         }
                     }
-                    elevation = shapeSettings.planetRaduis * (1 + elevation);
-                    shapeSettings.minmax.AddValue(elevation);
-                    pad.vertices[i] = originalVertices[i] * elevation;
+                    elevation = node->shapesettings.planetRaduis * (1 + elevation);
+                    node->shapesettings.minmax.AddValue(elevation);
+                    node->vertices[i] = node->originalVertices[i] * elevation;
 
-                    uv[i] = glm::vec1((node->colorGenerators->filter->NoiseFilter(originalVertices[i])-node->colorGenerators->noiseOffset) * node->colorGenerators->noiseStrength);
+                    uv[i] = glm::vec1((node->colorGenerators->filter->NoiseFilter(node->originalVertices[i])-node->colorGenerators->noiseOffset) * node->colorGenerators->noiseStrength);
                 }
-                printf("\n\nheigh: %f");
-                for (size_t i = 0; i < node->colorGenerators->numbiomes; i++) {
-                    std::string uniformName = "biomes[" + std::to_string(i) + "].startheight";
-                    GLint startheightLocation = shader->getUniformFromName(uniformName.c_str());
-                    printf("location: %d", startheightLocation);
-                     printf("heigh: %f", node->colorGenerators->biomes[i].startheight);
-                    glUniform1f(startheightLocation, node->colorGenerators->biomes[i].startheight);
-                }
-                glUniform3f(11, node->position.x,node->position.y, node->position.z);
-                glUniform2f(8, shapeSettings.minmax.Min, shapeSettings.minmax.Max);
-                glm::vec3 position = node->currentTransformationMatrix * glm::vec4(0, 0, 0, 1);
-                glUniform3f(7, position.x, position.y, position.z);
                 glBindBuffer(GL_ARRAY_BUFFER, node->noiseBufferID); 
                 glBufferData(GL_ARRAY_BUFFER, uv.size() * sizeof(glm::vec1), uv.data(), GL_STATIC_DRAW);
                 glBindBuffer(GL_ARRAY_BUFFER, node->vertexBufferID);
-                glBufferData(GL_ARRAY_BUFFER, pad.vertices.size() * sizeof(glm::vec3), pad.vertices.data(), GL_STATIC_DRAW);
-                change = false;
+                glBufferData(GL_ARRAY_BUFFER, node->vertices.size() * sizeof(glm::vec3), node->vertices.data(), GL_STATIC_DRAW);
+                node->change = false;
+                
             }
         }
         if (node->vertexArrayObjectID != -1) {
+
+            for (size_t i = 0; i < node->colorGenerators->numbiomes; i++) {
+                std::string uniformName = "biomes[" + std::to_string(i) + "].startheight";
+                GLint startheightLocation = shader->getUniformFromName(uniformName.c_str());
+                glUniform1f(startheightLocation, node->colorGenerators->biomes[i].startheight);
+            }
             glUniform1i(10, static_cast<GLint>(node->colorGenerators->biomes.size()));
-            
-            glUniform1f(12, 0.3f);
+            glUniform3f(11, node->position.x, node->position.y, node->position.z);
+            glUniform2f(8, node->shapesettings.minmax.Min, node->shapesettings.minmax.Max);/*
+            glm::vec3 position = node->currentTransformationMatrix * glm::vec4(0, 0, 0, 1);
+            glUniform3f(16, position.x, position.y, position.z);*/
             glUniform1i(6, 2);
-            glUniformMatrix3fv(7, 1, GL_FALSE, glm::value_ptr(node->position));
-            glUniformMatrix3fv(8, 1, GL_FALSE, glm::value_ptr(node->position));
             glBindVertexArray(node->vertexArrayObjectID);
             glBindTextureUnit(0, node->textureID);
             glBindTextureUnit(1, node->textureNormal);

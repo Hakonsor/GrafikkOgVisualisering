@@ -14,7 +14,6 @@ in layout(location = 2) vec3 pos;
 in layout(location = 3) mat3 TBN;
 in layout(location = 7) vec3 vpos;
 in layout(location = 8) vec2 v_noise;
-//in layout(location = 5) float fragDistanceFromCenter;
 
 uniform Lights lights[3];
 uniform Biomes biomes[7];
@@ -23,11 +22,12 @@ uniform Biomes biomes[7];
 uniform layout(location = 5) mat4 V;
 uniform layout(location = 6) int normal_geo;
 uniform layout(location = 8) vec2 minmax;
-uniform layout(location = 7) vec3 ballpos;
+
 uniform layout(location = 9) vec3 eye;
 uniform layout(location = 10) int numBiomes;
 uniform layout(location = 11) vec3 center;
 uniform layout(location = 12) float noiseheight;
+uniform layout(location = 15) vec3 ballpos;
 
 layout(binding = 3) uniform sampler2D elevationcolor;
 layout(binding = 2) uniform sampler2D roughness_texture;
@@ -114,9 +114,13 @@ float BiomePercentFromPoint(float heightPercent) {
 
 void main()
 {
-
     float distanceFromCenter = distance(vpos, center);
+    
+    
+    
     vec4 pixelcolor;
+    
+    
     vec3 normal; 
     if (normal_geo == 1 ) {
         normal =   normalize(TBN *(texture( normal_texture , textureCoordinates) * 2 -1).xyz);
@@ -132,7 +136,8 @@ void main()
 
 
     }
-
+//    if(distanceFromCenter < 50)
+//      pixelcolor = vec4(1);
     vec4 ballVec4 =  ( V ) * vec4(ballpos, 1.0f);
     vec3 homo_ballPos = vec3(ballVec4) / ballVec4.w;
 

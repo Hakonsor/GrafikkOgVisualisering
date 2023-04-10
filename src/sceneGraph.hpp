@@ -210,11 +210,13 @@ struct SceneNode {
 	unsigned int elevationTextureID;
 	unsigned int textureNormal;
 	unsigned int textureRoughness;
-	
+	std::vector<glm::vec3> originalVertices; 
+	std::vector<glm::vec3> vertices;
 	int id;
-	bool isDynamic;
+	bool change;
 	glm::vec3 color;
 	ColourGenerator* colorGenerators;
+	ShapeSettings shapesettings;
 	// Node type is used to determine how to handle the contents of a node
 	SceneNodeType nodeType;
 };
