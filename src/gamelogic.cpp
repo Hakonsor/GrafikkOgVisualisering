@@ -477,7 +477,7 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
 
     lightLeftNode->color = glm::vec3(255.0f/255, 255.0f / 255, 255/255);
     lightLeftNode->position = { 10, 10, 50 };
-    sunNode->position = lightLeftNode->position;
+    
 
     textureNode->position = { float(windowWidth/2.0)-(29*3), float(windowHeight / 2.0), 0.0};
     textureNode->scale = glm::vec3(300.0);
@@ -489,11 +489,6 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     rootNode->children.push_back(moonNode); // Moon Gets the shadow. only support for one shawdow so far
     boxNode->children.push_back(lightLeftNode);
     
-    /*rootNode->children.push_back(astroidNode);*/
-   
-    
-    
-    
     /*lightLeftNode->children.push_back(sunNode);*/
     rootNode->children.push_back(textureNode);
 
@@ -503,8 +498,6 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     boxNode->textureID = GetLoadedImage(brick_diffuse);
     boxNode->textureNormal = GetLoadedImage(brick_normalmap);
     boxNode->textureRoughness = GetLoadedImage(brick03_rgh);
-   
-
     /*padNode->textureID = GetLoadedImage(world);*/
     getTimeDeltaSeconds();
 
