@@ -234,7 +234,7 @@ void main()
 //            updatedcolor.xyz += atmosphericEffect.xyz;
         
       color = updatedcolor;
-//      color = vec4(vetorEye, 1);
+//     color = vec4(vetorEye, 1);
 //color = vec4(vetorEye, 1);
     }
 

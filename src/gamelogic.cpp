@@ -74,8 +74,6 @@ SimplexNoise noise;
 const glm::vec3 boxDimensions(350, 350, 350);
 const glm::vec3 padDimensions(1, 1, 1);
 
-glm::vec3 ballDirection(1, 1, 0.2f);
-
 CommandLineOptions options;
 
 bool hasStarted        = false;
@@ -427,7 +425,7 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     Mesh box = cube(boxDimensions, glm::vec2(30), true, true);
     Mesh moon = sphereCube(padDimensions, glm::vec2(30, 30), true, false, glm::vec3(1), 10.0, cameraPosition);
     Mesh astroid = sphereCube(padDimensions, glm::vec2(30, 30), true, false, glm::vec3(1), 10.0, cameraPosition);
-    Mesh sun = generateSphere(70.0, 40, 40);
+    Mesh sun = generateSphere(30.0, 40, 40);
     Mesh screen = Screenplane();
     // Fill buffers
     int textureid = GetLoadedImage(ASCII);
@@ -896,15 +894,20 @@ void renderNode(SceneNode* node) {
             break;
         case PLANE:
             planeshader->activate();
-            glUniform1i(6, 1);
+            glUniformMatrix4fv(3, 1, GL_FALSE, glm::value_ptr(node->currentTransformationMatrix));
             glUniformMatrix4fv(4, 1, GL_FALSE, glm::value_ptr(P));
             glUniformMatrix4fv(5, 1, GL_FALSE, glm::value_ptr(V));
             glUniform3f(9, cameraPosition.x, cameraPosition.y, cameraPosition.z);
             glUniform3f(17, padNode->position.x, padNode->position.y, padNode->position.z);
             glUniform2f(18, padNode->shapesettings.minmax.Min, padNode->shapesettings.minmax.Max);
-            glUniformMatrix4fv(3, 1, GL_FALSE, glm::value_ptr(node->currentTransformationMatrix));
-            glm::mat3 normalmatrix = glm::transpose(glm::inverse(node->currentTransformationMatrix));
-            glUniformMatrix3fv(13, 1, GL_FALSE, glm::value_ptr(node->currentTransformationMatrix));
+
+            GLint location = shader->getUniformFromName("lights[" + std::to_string(lightLeftNode->id) + "].position");
+            GLint colorlocation = shader->getUniformFromName("lights[" + std::to_string(lightLeftNode->id) + "].color");
+            glm::vec3 light = lightLeftNode->currentTransformationMatrix * glm::vec4(0, 0, 0, 1);
+
+            glUniform3f(location, light.x, light.y, light.z);
+            glUniform3f(colorlocation, lightLeftNode->color.x, lightLeftNode->color.y, lightLeftNode->color.z);
+            
             if (node->vertexArrayObjectID != -1) {
                 
                 glBindVertexArray(node->vertexArrayObjectID);
@@ -936,8 +939,5 @@ void renderFrame(GLFWwindow* window) {
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     
-    /*planeshader->activate();*/
     renderNode(screenNode);
-    //renderNode(padNode);
-   /* shader->activate();*/
 }
