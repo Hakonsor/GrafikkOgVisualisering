@@ -8,6 +8,45 @@
 #include "../../build/SimplexNoise.h"
 
 
+Mesh Screenplane() {
+    glm::vec3 points[4];
+    int indices[6];
+    float size = 1.0f;
+    points[0] = glm::vec3(-size, -size, 0.0f); // bottom-left
+    points[1] = glm::vec3(-size, size, 0.0f); // top-left
+    points[2] = glm::vec3(size, size, 0.0f); // top-right
+    points[3] = glm::vec3(size, -size, 0.0f); // bottom-right
+
+    glm::vec2 UVs[4] = {
+        {0, 0}, // bottom-left
+    {0, 1}, // top-left
+    {1, 1}, // top-right
+    {1, 0}, // bottom-right
+    
+    };
+
+    Mesh m;
+    int face = 0;
+    int offset = face * 6;
+    indices[offset + 0] = 0;
+    indices[offset + 1] = 3;
+    indices[offset + 2] = 1;
+    indices[offset + 3] = 3;
+    indices[offset + 4] = 2;
+    indices[offset + 5] = 1;
+
+    for (int i = 0; i < 6; i++) {
+        m.vertices.push_back(points[indices[offset + i]]);
+        m.indices.push_back(offset + i);
+    }
+    for (int i = 0; i < 6; i++) {
+        m.textureCoordinates.push_back(UVs[indices[offset + i]]);
+    }
+
+    return m;
+
+}
+
 Mesh cube(glm::vec3 scale, glm::vec2 textureScale, bool tilingTextures, bool inverted, glm::vec3 textureScale3d) {
     glm::vec3 points[8];
     int indices[36];

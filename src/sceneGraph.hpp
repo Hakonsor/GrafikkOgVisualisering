@@ -14,7 +14,7 @@
 #include <fstream>
 #include "SimplexNoise.h"
 enum SceneNodeType {
-	GEOMETRY, POINT_LIGHT, SPOT_LIGHT, GEOMETRY2D, NORMAL_MAPPED_GEOMETRY
+	GEOMETRY, POINT_LIGHT, SPOT_LIGHT, GEOMETRY2D, NORMAL_MAPPED_GEOMETRY, PLANE
 };
 const int const_numberofnoiselayer = 3;
 class MinMax {
@@ -214,6 +214,7 @@ struct SceneNode {
 	std::vector<glm::vec3> vertices;
 	int id;
 	bool change;
+	bool atsmophere;
 	glm::vec3 color;
 	ColourGenerator* colorGenerators;
 	ShapeSettings shapesettings;

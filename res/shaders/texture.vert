@@ -20,5 +20,5 @@ void main()
 {
     
     textureCoordinates_out = textureCoordinates_in;
-    gl_Position = (   P * V * M) * vec4(position, 1.0f);
+    gl_Position = ( M) * vec4(position, 1.0f);
 }

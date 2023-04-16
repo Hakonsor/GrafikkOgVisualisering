@@ -37,8 +37,13 @@ bool moonchange = true;
 bool astroidchange = true;
 unsigned int currentKeyFrame = 0;
 unsigned int previousKeyFrame = 0;
-
+unsigned int framebufferobject;
+unsigned int depthTexture;
+unsigned int framebuffer;
+unsigned int colorTexture = 0;
+unsigned int depthRenderbuffer;
 glm::vec3 cameraPosition = glm::vec3(0, 2, 50);
+
 
 float rotasjonupanddown = 0.0;
 float rotasjonfloat = 0.0;
@@ -49,15 +54,18 @@ SceneNode* boxNode;
 SceneNode* padNode;
 SceneNode* moonNode;
 SceneNode* astroidNode;
+SceneNode* screenNode;
 
 SceneNode* lightLeftNode;
 
 SceneNode* textureNode;
 double ballRadius = 3.0f;
-
+glm::mat4 V;
+glm::mat4 P;
 // These are heap allocated, because they should not be initialised at the start of the programSA
 sf::SoundBuffer* buffer;
 Gloom::Shader* shader;
+Gloom::Shader* planeshader;
 Gloom::Shader* texture2dShader;
 Gloom::Shader* proseduralShader;
 sf::Sound* sound;
@@ -82,18 +90,11 @@ bool mouseRightReleased = false;
 
 PNGImage ASCII = loadPNGFile("../res/textures/charmap.png");
 PNGImage brick_normalmap = loadPNGFile("../res/textures/Brick03_nrm.png");
-PNGImage brick_diffuse = loadPNGFile("../res/textures/Brick03_col.png");
+PNGImage brick_diffuse = loadPNGFile("../res/textures/space_rt.png");
 PNGImage brick03_rgh = loadPNGFile("../res/textures/Brick03_rgh.png");
 PNGImage world = loadPNGFile("../res/textures/world.png");
 
-float inverseLerp(float a, float b, float value) {
-    if (a != b) {
-        return (value - a) / (b - a);
-    }
-    else {
-        return 0.0f;
-    }
-}
+
 
 unsigned int GetLoadedImage(PNGImage texture) {
     int target = GL_TEXTURE_2D;
@@ -109,6 +110,15 @@ unsigned int GetLoadedImage(PNGImage texture) {
     return textureid;
 }
 
+
+float inverseLerp(float a, float b, float value) {
+    if (a != b) {
+        return (value - a) / (b - a);
+    }
+    else {
+        return 0.0f;
+    }
+}
 glm::vec4 ElevationColor(float elevation, std::vector<ElevationColorPoint> elevationColors) {
     //printf("elevation: %g", elevation);
     for (size_t i = 0; i < elevationColors.size() - 1; ++i) {
@@ -164,8 +174,6 @@ double mouseSensitivity = 1.0;
 double lastMouseX = windowWidth / 2;
 double lastMouseY = windowHeight / 2;
 
-//Mesh pad;
-
 void mouseCallback(GLFWwindow* window, double x, double y) {
     int windowWidth, windowHeight;
     glfwGetWindowSize(window, &windowWidth, &windowHeight);
@@ -185,14 +193,8 @@ void mouseCallback(GLFWwindow* window, double x, double y) {
     glfwSetCursorPos(window, windowWidth / 2, windowHeight / 2);
 }
 
-//// A few lines to help you if you've never used c++ structs
-// struct LightSource {
-//     bool a_placeholder_value;
-// };
-// LightSource lightSources[/*Put number of light sources you want here*/];
-
 void DefultPlanet(SceneNode* node) {
-
+    node->atsmophere = true;
     ShapeSettings shapeSettings;
     shapeSettings.noiselayer[0] = new NoiseLayer();
     shapeSettings.noiselayer[0]->filter = std::make_unique<SimpleNoiseFilter>();
@@ -243,7 +245,7 @@ void DefultPlanet(SceneNode* node) {
 
     BiomeSettings biome = colors->biomes[0];
 
-    biome.tint = glm::vec4(0);
+    biome.tint = glm::vec4(1);
     biome.startheight = 0.0001f;
     biome.coloursettings.colour = {
         {0.00f, glm::vec4(255, 255, 255, 255)},
@@ -311,7 +313,7 @@ void DefultPlanet(SceneNode* node) {
     colors->biomes[5] = biome;
 
     biome = colors->biomes[6];
-    biome.tint = glm::vec4(0);
+    biome.tint = glm::vec4(1);
     biome.startheight = 1.00f;
     biome.coloursettings.colour = {
         {0.00f, glm::vec4(255, 255, 255, 255)},
@@ -403,8 +405,7 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     if (!buffer->loadFromFile("../res/Hall of the Mountain King.ogg")) {
         return;
     }
-    
-    //printf(" settings:%g ", shapeSettings.noiseSettings.strength);
+
     options = gameOptions;
 
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
@@ -413,18 +414,21 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     texture2dShader = new Gloom::Shader();
     texture2dShader->makeBasicShader("../res/shaders/texture.vert", "../res/shaders/texture.frag");
     
+
+    planeshader = new Gloom::Shader();
+    planeshader->makeBasicShader("../res/shaders/plane.vert", "../res/shaders/plane.frag");
+
     shader = new Gloom::Shader();
     shader->makeBasicShader("../res/shaders/simple.vert", "../res/shaders/simple.frag");
     shader->activate();
     
     // Create meshes
-    
     Mesh pad = sphereCube(padDimensions, glm::vec2(30, 30), true, false, glm::vec3(1), 10.0, cameraPosition);
     Mesh box = cube(boxDimensions, glm::vec2(30), true, true);
     Mesh moon = sphereCube(padDimensions, glm::vec2(30, 30), true, false, glm::vec3(1), 10.0, cameraPosition);
     Mesh astroid = sphereCube(padDimensions, glm::vec2(30, 30), true, false, glm::vec3(1), 10.0, cameraPosition);
-    Mesh sun = generateSphere(1.0, 40, 40);
-    
+    Mesh sun = generateSphere(70.0, 40, 40);
+    Mesh screen = Screenplane();
     // Fill buffers
     int textureid = GetLoadedImage(ASCII);
     std::string text = "Start";
@@ -435,13 +439,13 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     rootNode = createSceneNode();
     boxNode  = createSceneNode();
     SceneNode* sunNode = createSceneNode();
+    screenNode = createSceneNode();
     
-
     padNode  = createSceneNode();
     padNode->vertices = pad.vertices;
     padNode->originalVertices = pad.vertices;
     DefultPlanet(padNode);
-    /*padNode->position.x += 10;*/
+    padNode->position.x += 10;
 
     moonNode = createSceneNode();
     moonNode->originalVertices = moon.vertices;
@@ -461,8 +465,64 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     generateBufferWhitNode(sun, *sunNode);
     generateBufferWhitNode(texture, *textureNode);
     generateBufferWhitNode(moon, *moonNode);
-    generateBufferWhitNode(moon, *astroidNode);
+    generateBufferWhitNode(moon, *astroidNode); 
+    generateBufferWhitNode(screen, *screenNode);
+
+    int windowWidth, windowHeight;
+    glfwGetWindowSize(window, &windowWidth, &windowHeight);
+
+
+    // Generate framebuffer
+    // Generate framebuffer
+    glGenFramebuffers(1, &framebuffer);
+
+    // Generate color attachment
+    glGenTextures(1, &colorTexture);
+    glBindTexture(GL_TEXTURE_2D, colorTexture);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, windowWidth, windowHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+    // Generate depth texture attachment
+    glGenTextures(1, &depthTexture);
+    glBindTexture(GL_TEXTURE_2D, depthTexture);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, windowWidth, windowHeight, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+    // Bind framebuffer and attach color and depth textures
+    glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colorTexture, 0);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthTexture, 0);
+
+    // Check if framebuffer is complete
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE) {
+        printf("Framebuffer complete: ");
+    }
+    else {
+        printf("ERRROR Framebuffer NOT complete: ");
+    }
+
+    // Unbind framebuffer
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    //glBindRenderbuffer(GL_RENDERBUFFER, 0);
+
+    ////glGenTextures(1, &colorTexture);
+    ////glBindTexture(GL_TEXTURE_2D, colorTexture);
+    ////glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, windowWidth, windowHeight, 0, GL_RGB,GL_UNSIGNED_BYTE, NULL);
+    ////glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    ////glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    //glBindTexture(GL_TEXTURE_2D, 0);
+    //glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colorTexture, 0);
+
+
+    //depthTexture = generateDepthTextureObject(windowWidth, windowHeight);
+    //framebufferobject = generateFrameBufferObject(depthTexture);
     
+
+
     lightLeftNode = createSceneNode();
 
     lightLeftNode->nodeType = POINT_LIGHT;
@@ -471,27 +531,29 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     textureNode->nodeType = GEOMETRY2D;
     boxNode->nodeType = NORMAL_MAPPED_GEOMETRY;
     sunNode->nodeType = SPOT_LIGHT;
+    screenNode->nodeType = PLANE;
 
-    lightLeftNode->id = 2;
+    lightLeftNode->id = 0;
     textureNode->id = 9;
+    screenNode->id = 1337;
 
     lightLeftNode->color = glm::vec3(255.0f/255, 255.0f / 255, 255/255);
-    lightLeftNode->position = { 10, 10, 50 };
+    lightLeftNode->position = { 200, 60, 0 };
     
 
-    textureNode->position = { float(windowWidth/2.0)-(29*3), float(windowHeight / 2.0), 0.0};
+    textureNode->position = { float(windowWidth/6.0)-(29*3), float(windowHeight / 2.0), 0.0};
     textureNode->scale = glm::vec3(300.0);
-
+    
     rootNode->children.push_back(boxNode);
     rootNode->children.push_back(padNode);
     
     rootNode->children.push_back(astroidNode);
     rootNode->children.push_back(moonNode); // Moon Gets the shadow. only support for one shawdow so far
-    boxNode->children.push_back(lightLeftNode);
+    rootNode->children.push_back(lightLeftNode);
     
-    /*lightLeftNode->children.push_back(sunNode);*/
+    lightLeftNode->children.push_back(sunNode);
     rootNode->children.push_back(textureNode);
-
+    
     /// oblig 2
     textureNode->textureID = textureid;
 
@@ -530,7 +592,8 @@ void processInput(GLFWwindow* window,float timeDelta, SceneNode* node) {
         rotasjonsomething -= timeDelta * 100.0;
     }
     if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) {
-        rotasjonsomething -= timeDelta * 100.0;
+        rotasjonsomething += timeDelta * 100.0;
+        
     }
     if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) {
         rotasjonupanddown += timeDelta ;
@@ -539,6 +602,10 @@ void processInput(GLFWwindow* window,float timeDelta, SceneNode* node) {
         rotasjonupanddown -= timeDelta ;
     }
     if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS) {
+
+        printf("\n padNode->position.x: %g", padNode->position.x);
+        printf("\n padNode->position.y: %g", padNode->position.y);
+        printf("\n padNode->position.z: %g", padNode->position.z);
         rotasjonfloat += timeDelta ;
     }
     if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS) {
@@ -612,24 +679,39 @@ void processInput(GLFWwindow* window,float timeDelta, SceneNode* node) {
 
 
     if (glfwGetKey(window, GLFW_KEY_0) == GLFW_PRESS) {
-        lightLeftNode->position.x -= timeDelta * 100.0;
+        lightLeftNode->position.x -= timeDelta * 100.0; 
+        printf("\n ligthposition x: %g ", lightLeftNode->position.x);
     }
     if (glfwGetKey(window, GLFW_KEY_9) == GLFW_PRESS) {
         lightLeftNode->position.x += timeDelta * 100.0;
+        printf("\n ligthposition x: %g ", lightLeftNode->position.x);
     }
     if (glfwGetKey(window, GLFW_KEY_8) == GLFW_PRESS) {
         lightLeftNode->position.z -= timeDelta * 100.0;
+        printf("\n ligthposition z: %g ", lightLeftNode->position.z);
     }
     if (glfwGetKey(window, GLFW_KEY_7) == GLFW_PRESS) {
         lightLeftNode->position.z += timeDelta * 100.0;
+        printf("\n ligthposition z: %g ", lightLeftNode->position.z);
     }
 
 }
 
-
-bool change1 = false;
-
 void updateFrame(GLFWwindow* window) {
+
+    glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+    /*glEnable(GL_DEPTH_TEST);*/
+    glEnable(GL_DEPTH_TEST);
+
+    //glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+
+    // Clear color and depth buffers
+    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    //glBindFramebuffer(GL_FRAMEBUFFER, colorTexture);
+    //glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    //glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 
     double timeDelta = getTimeDeltaSeconds();
@@ -646,7 +728,7 @@ void updateFrame(GLFWwindow* window) {
     float field_of_view = 80.0f;
     float aspect_ratio = float(windowWidth) / float(windowHeight);
     float near_clip_distance = 0.1f;
-    float far_clip_distance = 3500.0f;
+    float far_clip_distance = 1000.0f;
     glm::mat4 projection_matrix = glm::perspective(glm::radians(field_of_view), aspect_ratio, near_clip_distance, far_clip_distance);
     // Set up model
     glm::mat4 model_matrix = glm::mat4(1.0f);
@@ -654,13 +736,15 @@ void updateFrame(GLFWwindow* window) {
     model_matrix = glm::rotate(model_matrix, rotasjonupanddown, glm::vec3(1.0f, 0.0f, 0.0f));
 
     // Set up matrices for rendering
-    glm::mat4 P = projection_matrix;
-    glm::mat4 V = view_matrix;
+    P = projection_matrix;
+    V = view_matrix;
     glm::mat4 M = model_matrix;
 
     glm::mat4 identity = glm::mat4(model_matrix);
-    updateNodeTransformations(rootNode, identity);
-
+    updateNodeTransformations(rootNode, identity); 
+    screenNode->currentTransformationMatrix = glm::mat4(1.0f);
+    //updateNodeTransformations(screenNode, identity);
+    
     glUniformMatrix4fv(4, 1, GL_FALSE, glm::value_ptr(P));
     glUniformMatrix4fv(5, 1, GL_FALSE, glm::value_ptr(V));
     glUniform3f(9, cameraPosition.x, cameraPosition.y, cameraPosition.z);
@@ -699,10 +783,11 @@ void updateNodeTransformations(SceneNode* node, glm::mat4 transformationThusFar)
     }
     case SPOT_LIGHT: break;
     case GEOMETRY2D: break;
-    
-
+    //case PLANE:
+    //    glUniformMatrix4fv(4, 1, GL_FALSE, glm::value_ptr(glm::mat4(1.0f)));
+    //    glUniformMatrix4fv(5, 1, GL_FALSE, glm::value_ptr(glm::mat4(1.0f)));
+    //break;
     }
-
     for (SceneNode* child : node->children) {
         updateNodeTransformations(child, node->currentTransformationMatrix);
     }
@@ -721,10 +806,10 @@ void renderNode(SceneNode* node) {
     switch (node->nodeType) {
 
     case GEOMETRY:
+       
         if (node->vertexArrayObjectID != -1) {
             double timeDelta = getTimeDeltaSeconds();
-            
-            //noiseSettings.centre.x += (sin(timeDelta * frequency) * amplitude);
+
             if(node->change){
                 std::vector<glm::vec1> uv(node->originalVertices.size());
                 node->shapesettings.minmax.Min = std::numeric_limits<float>::max();
@@ -756,14 +841,15 @@ void renderNode(SceneNode* node) {
                 glBufferData(GL_ARRAY_BUFFER, node->vertices.size() * sizeof(glm::vec3), node->vertices.data(), GL_STATIC_DRAW);
                 node->change = false;
             }
-        }
-        if (node->vertexArrayObjectID != -1) {
-
+            
             for (size_t i = 0; i < node->colorGenerators->numbiomes; i++) {
                 std::string uniformName = "biomes[" + std::to_string(i) + "].startheight";
                 GLint startheightLocation = shader->getUniformFromName(uniformName.c_str());
                 glUniform1f(startheightLocation, node->colorGenerators->biomes[i].startheight);
             }
+
+            glUniform3f(17, padNode->position.x, padNode->position.y, padNode->position.z);
+            glUniform2f(18, padNode->shapesettings.minmax.Min, padNode->shapesettings.minmax.Max);
             glUniform1i(10, static_cast<GLint>(node->colorGenerators->numbiomes));
             glUniform3f(11, node->position.x, node->position.y, node->position.z);
             glUniform2f(8, node->shapesettings.minmax.Min, node->shapesettings.minmax.Max);
@@ -773,17 +859,19 @@ void renderNode(SceneNode* node) {
             glBindTextureUnit(1, node->textureNormal);
             glBindTextureUnit(2, node->textureRoughness);
             glBindTextureUnit(3, node->elevationTextureID);
+
             glDrawElements(GL_TRIANGLES, node->VAOIndexCount, GL_UNSIGNED_INT, nullptr);
-        }
+
+         }
         break;
         case POINT_LIGHT: 
             break;
         case SPOT_LIGHT: 
+            glUniform1i(6, 3);
             glBindVertexArray(node->vertexArrayObjectID);
             glDrawElements(GL_TRIANGLES, node->VAOIndexCount, GL_UNSIGNED_INT, nullptr);
             break;
         case NORMAL_MAPPED_GEOMETRY:
-
             if (node->vertexArrayObjectID != -1) {
                 glUniform1i(6, 1);
                 glBindVertexArray(node->vertexArrayObjectID);
@@ -795,19 +883,38 @@ void renderNode(SceneNode* node) {
             break;
         case GEOMETRY2D:
             texture2dShader->activate();
-            /* glm::vec3 texture = node->currentTransformationMatrix * glm::vec4(0, 0, 0, 1);
-            glUniform3f(node->id, texture.x, texture.y, texture.z);*/
-            glm::mat4 P = glm::ortho(0.0f, float(windowWidth), 0.0f, float(windowHeight), -1.0f, 350.f);
-            glm::mat4 V = glm::mat4(1.0f); //cameraTransform;
+            glm::mat4 Projetion = glm::ortho(0.0f, float(windowWidth), 0.1f, float(windowHeight), -0.1f, 350.f);
+            glm::mat4 View = glm::mat4(1.0f); //cameraTransform;
             glUniformMatrix4fv(3, 1, GL_FALSE, glm::value_ptr(node->currentTransformationMatrix));
-            glUniformMatrix4fv(4, 1, GL_FALSE, glm::value_ptr(P));
-            glUniformMatrix4fv(5, 1, GL_FALSE, glm::value_ptr(V));
+            glUniformMatrix4fv(4, 1, GL_FALSE, glm::value_ptr(Projetion));
+            glUniformMatrix4fv(5, 1, GL_FALSE, glm::value_ptr(View));
             glUniform1i(6, 0);
             glBindVertexArray(node->vertexArrayObjectID);
             glBindTextureUnit(0, node->textureID);
             glDrawElements(GL_TRIANGLES, node->VAOIndexCount, GL_UNSIGNED_INT, nullptr);
             shader->activate();
             break;
+        case PLANE:
+            planeshader->activate();
+            glUniform1i(6, 1);
+            glUniformMatrix4fv(4, 1, GL_FALSE, glm::value_ptr(P));
+            glUniformMatrix4fv(5, 1, GL_FALSE, glm::value_ptr(V));
+            glUniform3f(9, cameraPosition.x, cameraPosition.y, cameraPosition.z);
+            glUniform3f(17, padNode->position.x, padNode->position.y, padNode->position.z);
+            glUniform2f(18, padNode->shapesettings.minmax.Min, padNode->shapesettings.minmax.Max);
+            glUniformMatrix4fv(3, 1, GL_FALSE, glm::value_ptr(node->currentTransformationMatrix));
+            glm::mat3 normalmatrix = glm::transpose(glm::inverse(node->currentTransformationMatrix));
+            glUniformMatrix3fv(13, 1, GL_FALSE, glm::value_ptr(node->currentTransformationMatrix));
+            if (node->vertexArrayObjectID != -1) {
+                
+                glBindVertexArray(node->vertexArrayObjectID);
+                glBindTextureUnit(4, colorTexture);
+                glBindTextureUnit(5, depthTexture);
+                glDrawElements(GL_TRIANGLES, node->VAOIndexCount, GL_UNSIGNED_INT, nullptr);
+            }
+            shader->activate();
+            break;
+
     }
 
     for(SceneNode* child : node->children) {
@@ -816,9 +923,21 @@ void renderNode(SceneNode* node) {
 }
 
 void renderFrame(GLFWwindow* window) {
+
     int windowWidth, windowHeight;
     glfwGetWindowSize(window, &windowWidth, &windowHeight);
     glViewport(0, 0, windowWidth, windowHeight);
+
     renderNode(rootNode);
 
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glDisable(GL_DEPTH_TEST);
+
+    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    
+    /*planeshader->activate();*/
+    renderNode(screenNode);
+    //renderNode(padNode);
+   /* shader->activate();*/
 }
