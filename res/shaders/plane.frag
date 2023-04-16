@@ -42,16 +42,17 @@ float radius = 3;
 float softradius = 4;
 
 // asmophere
+ void initColor();
 float atmosphericRadius = ((atmosphereMinMax.y+atmosphereMinMax.x)/2) * 1.3;
 float planetRadius = (atmosphereMinMax.y+atmosphereMinMax.x)/2; // max + 10?
-float densityFalloff = 3;
-float numInScatteringPoints = 10;
+float densityFalloff = 6;
+float numInScatteringPoints = 30;
 float numOpticalDepthPoints = 10;
 vec3 wavelength = vec3(700, 530, 440);
 float scatterR;
 float scatterB;
 float scatterG;
-float scatteringStrength = 3;
+float scatteringStrength = 7;
 vec3 scatteringCoefficients;
 
 float LinearEyeDepth(float depth) {
@@ -82,50 +83,88 @@ float opticalDepth(vec3 rayOrigin, vec3 rayDirection, float rayLength ){
 }
 
 
-    
-vec3 calculateLight(vec3 rayOrigin, vec3 rayDir, float distanceThroughAmoshpere, vec3 orignialcolor){
-    vec3 dirToSun = lights[0].position;
-    vec3 inScatterPoint = rayOrigin;
-    float stepSize = distanceThroughAmoshpere / (numInScatteringPoints -1);
-    vec3 inScatteredLight = vec3(0);
-    float viewRayOpticalDepth = 0;
+//vec3 calculateLight(vec3 rayOrigin, vec3 rayDir, float distanceThroughAmoshpere, vec3 orignialcolor){
+//    vec3 dirToSun = lights[0].position;
+//    vec3 inScatterPoint = rayOrigin;
+//    float stepSize = distanceThroughAmoshpere / (numInScatteringPoints -1);
+//    vec3 inScatteredLight = vec3(0);
+//    float viewRayOpticalDepth = 0;
+//       
+//    for(int i = 0; i < numInScatteringPoints; i++){
+//        float sunRayLength = raySphere(atmosphereCenter, atmosphericRadius, inScatterPoint, dirToSun).y;
+//        float sunRayOpticalDepth = opticalDepth(inScatterPoint, dirToSun, sunRayLength);
+//        viewRayOpticalDepth = opticalDepth(inScatterPoint, -rayDir, stepSize * i);
+//        vec3 transmittance = exp(-(sunRayOpticalDepth+viewRayOpticalDepth) * scatteringCoefficients);  
+//        float localDensity = densityAtPoint(inScatterPoint);
+//        inScatteredLight += localDensity * transmittance * scatteringCoefficients * stepSize;
+//        inScatterPoint += rayDir * stepSize; 
+//    }
+//    float orignialcoltransmittance = exp(-viewRayOpticalDepth);
+//    return orignialcolor * orignialcoltransmittance + inScatteredLight;
+//}
+//
+//
+//
+//vec4 asmophere(vec4 orignalcolor,  float sphereradius, float depth, vec3 viewDirection){
+//    float ocenradius = minmax.x;
+//    
+//    vec3 rayorigin = eye;
+//    vec3 raydiraction = normalize(viewDirection);
+//    float sceneDepth = depth * length(raydiraction);
+//    // sea not implemented
+//    //    float distancetoOcean = raySphere(atmosphereCenter, ocenradius, rayorigin, raydiraction).x;   
+//    float distancetosurface = sceneDepth;//min(sceneDepth, distancetoOcean);
+//
+//    vec2 hitinfo = raySphere(atmosphereCenter, sphereradius, rayorigin, raydiraction );
+//    float distanceToAmoshpere = hitinfo.x;
+//    float distanceThroughAmoshpere = distancetosurface - distanceToAmoshpere;//min(hitinfo.y, distancetosurface - distanceToAmoshpere);
+//
+//    if(distanceThroughAmoshpere > 0){
+//        const float epsilon = 0.0001;
+//        vec3 pointInAtmosphere = rayorigin + raydiraction + (distanceToAmoshpere+ epsilon);
+//        vec3 light = calculateLight(pointInAtmosphere, raydiraction, distanceThroughAmoshpere- epsilon * 2, orignalcolor.xyz);
+//
+//        return vec4(orignalcolor.xyz * (1 - light)+ light, orignalcolor.w); 
+//    }
+//    return orignalcolor;
+//    }
+    float calculateLight(vec3 rayOrigin, vec3 rayDir, float distanceThroughAmoshpere){
+        vec3 dirToSun = lights[0].position;
+        vec3 inScatterPoint = rayOrigin;
+        float stepSize = distanceThroughAmoshpere / (numInScatteringPoints -1);
+        float inScatteredLight = 0;
        
-    for(int i = 0; i < numInScatteringPoints; i++){
-        float sunRayLength = raySphere(atmosphereCenter, atmosphericRadius, inScatterPoint, dirToSun).y;
-        float sunRayOpticalDepth = opticalDepth(inScatterPoint, dirToSun, sunRayLength);
-        viewRayOpticalDepth = opticalDepth(inScatterPoint, -rayDir, stepSize * i);
-        vec3 transmittance = exp(-(sunRayOpticalDepth+viewRayOpticalDepth) * scatteringCoefficients);  
-        float localDensity = densityAtPoint(inScatterPoint);
-        inScatteredLight += localDensity * transmittance * scatteringCoefficients * stepSize;
-        inScatterPoint += rayDir * stepSize; 
-    }
-    float orignialcoltransmittance = exp(-viewRayOpticalDepth);
-    return orignialcolor * orignialcoltransmittance + inScatteredLight;
-}
-
-
-
-vec4 asmophere(vec4 orignalcolor,  float sphereradius, float depth, vec3 viewDirection){
-    float ocenradius = minmax.x;
+        for(int i = 0; i < numInScatteringPoints; i++){
+            float sunRayLength = raySphere(atmosphereCenter, atmosphericRadius, inScatterPoint, dirToSun).y;
+            float sunRayOpticalDepth = opticalDepth(inScatterPoint, dirToSun, sunRayLength);
+            float viewRayOpticalDepth = opticalDepth(inScatterPoint, -rayDir, stepSize * i);
+            float transmittance = (exp(-sunRayOpticalDepth)*exp(-viewRayOpticalDepth)); // add divied by 4
+            float localDensity = densityAtPoint(inScatterPoint);
+            inScatteredLight += localDensity * transmittance * stepSize;
+            inScatterPoint += rayDir * stepSize; 
+        }
+        return inScatteredLight;
+    }   
     
-    vec3 rayorigin = eye;
-    vec3 raydiraction = normalize(-viewDirection);
-    float sceneDepth = depth * length(raydiraction);
-    float distancetoOcean = raySphere(atmosphereCenter, ocenradius, rayorigin, raydiraction).x;   
-    float distancetosurface = min(sceneDepth, distancetoOcean);
+    vec4 asmophere(vec4 orignalcolor,  float sphereradius, float depth, vec3 viewDirection){
+        float ocenradius = minmax.x;
+        // depth of scene, less brigth if its closer to planet.
+        vec3 rayorigin = lights[0].position;
+        vec3 raydiraction = normalize(viewDirection);
+        float sceneDepth = LinearEyeDepth(depth) * length(viewDirection);
+        float distancetoOcean = raySphere(atmosphereCenter, ocenradius, rayorigin, raydiraction).x;   
+        float distancetosurface = min(sceneDepth, distancetoOcean);
 
-    vec2 hitinfo = raySphere(atmosphereCenter, sphereradius, rayorigin, raydiraction );
-    float distanceToAmoshpere = hitinfo.x;
-    float distanceThroughAmoshpere = min(hitinfo.y, distancetosurface - distanceToAmoshpere);
-
-    if(distanceThroughAmoshpere > 0){
-        const float epsilon = 0.0001;
-        vec3 pointInAtmosphere = rayorigin + raydiraction + (distanceToAmoshpere+ epsilon);
-        vec3 light = calculateLight(pointInAtmosphere, raydiraction, distanceThroughAmoshpere- epsilon * 2, orignalcolor.xyz);
-
-        return vec4(light, 1); 
-    }
-    return orignalcolor;
+        vec2 hitinfo = raySphere(atmosphereCenter, sphereradius, rayorigin, raydiraction );
+        float distanceToAmoshpere = hitinfo.x;
+        float distanceThroughAmoshpere = hitinfo.y;//min(hitinfo.y, sceneDepth - distanceToAmoshpere);
+        if(distanceThroughAmoshpere > 0){
+            const float epsilon = 0.0001;
+            vec3 pointInAtmosphere = rayorigin + raydiraction + (distanceToAmoshpere+ epsilon);
+            float light = calculateLight(pointInAtmosphere, raydiraction, distanceThroughAmoshpere- epsilon * 2);
+            return orignalcolor * (1 - light) + light; // added min 0.5
+        }
+        return orignalcolor;
     }
     
 
@@ -148,12 +187,29 @@ void main()
 
     vec3 viewDirection = normalize(eyeSpacePos.xyz);
 
+     
+
+    initColor();
     vec4 atmosphericEffect = asmophere(updatedcolor, atmosphericRadius, depth, eyeSpacePos.xyz);
 
     if(atmosphericEffect.x > 0)
             updatedcolor.xyz += atmosphericEffect.xyz;
-     color = updatedcolor;
+     color = atmosphericEffect;
 
+//     vec2 hitinfo = raySphere(atmosphereCenter, atmosphericRadius, eye, normalize(viewDirection));
+//    float distanceToSphere = hitinfo.x;
+//
+//// Visualize the distance to the sphere by mapping it to a color
+//float normalizedDistance = clamp(distanceToSphere / 1000.0, 0.0, 1.0); // Assuming the max distance is 1000
+//color = vec4(vec3(normalizedDistance), 1.0);
+//     vec2 hitinfo = raySphere(atmosphereCenter, atmosphericRadius, eye, normalize(viewDirection) ) ;
+//
+     
+//    float distanceThroughSphere = hitinfo.y;
+//
+//    // Visualize the distance through the sphere by mapping it to a color
+//    float normalizedDistance = clamp(distanceThroughSphere / 1000.0, 0.0, 1.0); // Assuming the max distance is 1000
+//    color = vec4(vec3(normalizedDistance), 1.0);
     }
 
 
@@ -185,43 +241,12 @@ vec2 raySphere(vec3 sphereCenter, float sphereradius, vec3 rayOrigin, vec3 rayDi
     return vec2(fMaxFloat, 0.0);
 }
 
+void initColor(){
+
+    float scatterR = pow(400 / wavelength.x, 4) * scatteringStrength;
+    float scatterB = pow(400 / wavelength.z, 4) * scatteringStrength;
+    float scatterG = pow(400 / wavelength.y, 4) * scatteringStrength;
+    vec3 scatteringCoefficients = vec3(scatterR, scatterG, scatterB);
+}
 
 
-//    float calculateLight(vec3 rayOrigin, vec3 rayDir, float distanceThroughAmoshpere){
-//    vec3 dirToSun = lights[0].position;
-//    vec3 inScatterPoint = rayOrigin;
-//    float stepSize = distanceThroughAmoshpere / (numInScatteringPoints -1);
-//    float inScatteredLight = 0;
-//       
-//    for(int i = 0; i < numInScatteringPoints; i++){
-//        float sunRayLength = raySphere(atmosphereCenter, atmosphericRadius, inScatterPoint, dirToSun).y;
-//        float sunRayOpticalDepth = opticalDepth(inScatterPoint, dirToSun, sunRayLength);
-//        float viewRayOpticalDepth = opticalDepth(inScatterPoint, -rayDir, stepSize * i);
-//        float transmittance = (exp(-sunRayOpticalDepth)*exp(-viewRayOpticalDepth))/4; // add divied by 4
-//        float localDensity = densityAtPoint(inScatterPoint);
-//        inScatteredLight += localDensity * transmittance * stepSize;
-//        inScatterPoint += rayDir * stepSize; 
-//    }
-//    return inScatteredLight;
-//}
-//    
-//    vec4 asmophere(vec4 orignalcolor,  float sphereradius, float depth, vec3 viewDirection){
-//        float ocenradius = minmax.x;
-//        // depth of scene, less brigth if its closer to planet.
-//        vec3 rayorigin = eye;
-//        vec3 raydiraction = normalize(viewDirection);
-//        float sceneDepth = LinearEyeDepth(depth) * length(viewDirection * 5);
-//        float distancetoOcean = raySphere(atmosphereCenter, ocenradius, rayorigin, raydiraction).x;   
-//        float distancetosurface = min(sceneDepth, distancetoOcean);
-//
-//        vec2 hitinfo = raySphere(atmosphereCenter, sphereradius, rayorigin, raydiraction );
-//        float distanceToAmoshpere = hitinfo.x;
-//        float distanceThroughAmoshpere = min(hitinfo.y, sceneDepth - distanceToAmoshpere);
-//        if(distanceThroughAmoshpere > 0){
-//            const float epsilon = 0.0001;
-//            vec3 pointInAtmosphere = rayorigin + raydiraction + (distanceToAmoshpere+ epsilon);
-//            float light = calculateLight(pointInAtmosphere, raydiraction, distanceThroughAmoshpere- epsilon * 2);
-//            return min(orignalcolor * (1 - light) + light, 0.5); // added min 0.5
-//        }
-//        return orignalcolor;
-//    }

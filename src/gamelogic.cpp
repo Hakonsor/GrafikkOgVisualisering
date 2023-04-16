@@ -71,7 +71,7 @@ Gloom::Shader* proseduralShader;
 sf::Sound* sound;
 SimplexNoise noise;
 
-const glm::vec3 boxDimensions(350, 350, 350);
+const glm::vec3 boxDimensions(600, 600, 600);
 const glm::vec3 padDimensions(1, 1, 1);
 
 CommandLineOptions options;
@@ -422,7 +422,7 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     
     // Create meshes
     Mesh pad = sphereCube(padDimensions, glm::vec2(30, 30), true, false, glm::vec3(1), 10.0, cameraPosition);
-    Mesh box = cube(boxDimensions, glm::vec2(30), true, true);
+    Mesh box = cube(boxDimensions, glm::vec2(3000), true, true);
     Mesh moon = sphereCube(padDimensions, glm::vec2(30, 30), true, false, glm::vec3(1), 10.0, cameraPosition);
     Mesh astroid = sphereCube(padDimensions, glm::vec2(30, 30), true, false, glm::vec3(1), 10.0, cameraPosition);
     Mesh sun = generateSphere(30.0, 40, 40);
@@ -503,23 +503,7 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
         printf("ERRROR Framebuffer NOT complete: ");
     }
 
-    // Unbind framebuffer
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    //glBindRenderbuffer(GL_RENDERBUFFER, 0);
-
-    ////glGenTextures(1, &colorTexture);
-    ////glBindTexture(GL_TEXTURE_2D, colorTexture);
-    ////glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, windowWidth, windowHeight, 0, GL_RGB,GL_UNSIGNED_BYTE, NULL);
-    ////glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    ////glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    //glBindTexture(GL_TEXTURE_2D, 0);
-    //glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colorTexture, 0);
-
-
-    //depthTexture = generateDepthTextureObject(windowWidth, windowHeight);
-    //framebufferobject = generateFrameBufferObject(depthTexture);
-    
-
 
     lightLeftNode = createSceneNode();
 
@@ -707,9 +691,6 @@ void updateFrame(GLFWwindow* window) {
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    //glBindFramebuffer(GL_FRAMEBUFFER, colorTexture);
-    //glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    //glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 
     double timeDelta = getTimeDeltaSeconds();
