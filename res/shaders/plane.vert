@@ -25,12 +25,11 @@ out layout(location = 7) vec3 vPosition;
 out layout(location = 13) vec2 v_noise;
 out layout(location = 14) vec3 vetorEye;
 //out layout(location = 16) float depth;
+
 //
 
 void main()
 {
-    
-    
     normal_out = normalize(normalMatrix * normal_in);
     vec3 tangent_out =  normalize( normalMatrix* tangent);
     vec3 bitangent_out =  normalize(normalMatrix* bitangent);
@@ -46,8 +45,9 @@ void main()
 //    vec4 worldPos = M * vec4(position, 1.0f);
 //    depth = (worldPos.z / worldPos.w) * 0.5 + 0.5;
     vec4 vertpos4 = (  V * M ) * vec4(position, 1.0f);
-    vetorEye = -vertpos4.xyz;
+    vetorEye = position.xyz;
     vertPos = vec3(vertpos4) / vertpos4.w;
     textureCoordinates_out = textureCoordinates_in;
-    gl_Position = ( P * V * M ) * vec4(position, 1.0f);
+ //   gl_Position = ( P * V * M ) * vec4(position, 1.0f);
+    gl_Position = vec4(position.x,position.y ,0, 1.0f);
 }
