@@ -54,14 +54,14 @@ float dither(vec2 uv) { return (rand(uv)*2.0-1.0) / 256.0; }
 
 // sun
 float diffuse_reflekton = 0.2;
-float ambient = 0.0;
+float ambient = 0.2;
 float shininessVal = 11;
 vec3 lightSpecular;
 float la = 0.000007;
 float lb = 0.000007;
 float lc = 0.000007;
-float radius = 3;
-float softradius = 4;
+float radius = 30;
+float softradius = 5;
 
 // asmophere
 
@@ -74,7 +74,6 @@ void main()
         color = vec4(253/255.0, 184/255.0, 19/255.0, 1);
         return;
      }
-
     float distanceFromCenter = distance(vpos, center);
     float elevation = inverseLerp(minmax.x, minmax.y, distanceFromCenter);
     float normalizedY = (vpos.y - (center.y - distanceFromCenter)) / (2.0 * distanceFromCenter);

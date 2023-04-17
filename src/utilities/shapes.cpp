@@ -207,7 +207,7 @@ Mesh sphereCube(glm::vec3 scale, glm::vec2 textureScale, bool tilingTextures, bo
 
         int lod = 100;//minLod + (int)(normalizedDistance * (maxLod - minLod));
         float step = 1.0f / lod;
-        float noiseFactor =  0.09;
+        /*float noiseFactor =  0.09;*/
 
         for (int row = 0; row < lod; ++row) {
             for (int col = 0; col < lod; ++col) {
@@ -236,7 +236,7 @@ Mesh sphereCube(glm::vec3 scale, glm::vec2 textureScale, bool tilingTextures, bo
                 int offset = m.vertices.size();
 
                 for (int i = 0; i < 4; ++i) {
-                        float noiseValue = SimplexNoise::noise(quadPoints[i].x, quadPoints[i].y, quadPoints[i].z);
+                      /*  float noiseValue = SimplexNoise::noise(quadPoints[i].x, quadPoints[i].y, quadPoints[i].z);*/
                         glm::vec3 vertex = quadPoints[i];// *radius* (1.0f + noiseFactor * (noiseValue - 1.0f));
                         m.vertices.push_back(vertex);
                         glm::vec3 normal = calculateNormal(quadPoints[0], quadPoints[1], quadPoints[2]);

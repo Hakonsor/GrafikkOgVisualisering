@@ -83,3 +83,38 @@ vec4 asmophere(float sphereradius, float depth){
 //    return  vec4(1)*(distanceThroughAmoshpere / (sphereradius*2));
     return  (distanceThroughAmoshpere / (sphereradius*2))* vec4(normalize(-vetorEye.xyz) * 0.5 +0.5,1);
 }
+
+
+float opticalDepth(vec3 rayOrigin, vec3 rayDirection, float rayLength ){
+    vec3 densitySamplePoint = rayOrigin;
+    float stepSize = rayLength / (numOpticalDepthPoints -1);
+    float opticalDepth = 0;
+
+    for(int i = 0; i < numOpticalDepthPoints; i++){
+        float localDensity = densityAtPoint(densitySamplePoint);
+        opticalDepth += localDensity * stepSize;
+        densitySamplePoint += rayDirection * stepSize;
+    }
+    return opticalDepth;
+}
+
+
+vec3 calculateLight(vec3 rayOrigin, vec3 rayDir, float distanceThroughAmoshpere, vec3 orignialcolor,float distanceToSurface){
+    vec3 dirToSun = lights[0].position;
+    vec3 inScatterPoint = rayOrigin;
+    float stepSize = distanceThroughAmoshpere / (numInScatteringPoints -1);
+    vec3 inScatteredLight = vec3(0);
+    float viewRayOpticalDepth = 0;
+       
+    for(int i = 0; i < numInScatteringPoints; i++){
+        float sunRayLength = raySphere(atmosphereCenter, atmosphericRadius, inScatterPoint, dirToSun).y;
+        float sunRayOpticalDepth = opticalDepth(inScatterPoint, dirToSun, sunRayLength);
+        viewRayOpticalDepth = opticalDepth(inScatterPoint, -rayDir, stepSize * i);
+        vec3 transmittance = exp(-(sunRayOpticalDepth+viewRayOpticalDepth) * scatteringCoefficients);  
+        float localDensity = densityAtPoint(inScatterPoint);
+        inScatteredLight += localDensity * transmittance * scatteringCoefficients * stepSize;
+        inScatterPoint += rayDir * stepSize; 
+    }
+    float orignialcoltransmittance = exp(-viewRayOpticalDepth);
+    return orignialcolor * orignialcoltransmittance + inScatteredLight;
+}

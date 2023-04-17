@@ -42,9 +42,13 @@ unsigned int depthTexture;
 unsigned int framebuffer;
 unsigned int colorTexture = 0;
 unsigned int depthRenderbuffer;
-glm::vec3 cameraPosition = glm::vec3(0, 2, 50);
+glm::vec3 cameraPosition = glm::vec3(40, 2, 200);
 
-
+float densityFalloff = 5;
+float scatteringStrength = 21;
+float intensity = 1;
+float numInScatteringPoints = 10;
+float numOpticalDepthPoints = 10;
 float rotasjonupanddown = 0.0;
 float rotasjonfloat = 0.0;
 float rotasjonsomething = 0.0;
@@ -194,6 +198,7 @@ void mouseCallback(GLFWwindow* window, double x, double y) {
 void DefultPlanet(SceneNode* node) {
     node->atsmophere = true;
     ShapeSettings shapeSettings;
+    shapeSettings.planetRaduis = 80;
     shapeSettings.noiselayer[0] = new NoiseLayer();
     shapeSettings.noiselayer[0]->filter = std::make_unique<SimpleNoiseFilter>();
     shapeSettings.noiselayer[1] = new NoiseLayer();
@@ -327,15 +332,46 @@ void DefultPlanet(SceneNode* node) {
 
 void DefultMoon(SceneNode* node) {
     ShapeSettings shapeSettings;
-    shapeSettings.planetRaduis = 1;
-
-
     shapeSettings.noiselayer[0] = new NoiseLayer();
     shapeSettings.noiselayer[0]->filter = std::make_unique<SimpleNoiseFilter>();
     shapeSettings.noiselayer[1] = new NoiseLayer();
     shapeSettings.noiselayer[1]->filter = std::make_unique<SimpleNoiseFilter>();
     shapeSettings.noiselayer[2] = new NoiseLayer();
     shapeSettings.noiselayer[2]->filter = std::make_unique<RidgidNoisefilter>();
+
+    NoiseSettings noise = shapeSettings.noiselayer[0]->filter->noiseSetting;
+    noise.strength = 0.51f;
+    noise.baseroughness = 0.71f;
+    noise.roughness = 1.83f;
+    noise.persistence = 0.54f;
+    noise.layers = 5;
+    noise.centre = glm::vec3(1);
+    noise.minValue = 1.35409;
+    shapeSettings.noiselayer[0]->filter->noiseSetting = noise;
+    shapeSettings.noiselayer[0]->enable = true;
+    // Initialize the noise settings of the second NoiseLayer
+    noise = shapeSettings.noiselayer[1]->filter->noiseSetting;
+    noise.strength = 0.80f;
+    noise.baseroughness = 1.08f;
+    noise.roughness = 1.92717f;
+    noise.persistence = 0.54f;
+    noise.layers = 5;
+    noise.centre = glm::vec3(1);
+    noise.minValue = 1.62409;
+    shapeSettings.noiselayer[1]->filter->noiseSetting = noise;
+    shapeSettings.noiselayer[1]->enable = true;
+
+    noise = shapeSettings.noiselayer[2]->filter->noiseSetting;
+    noise.strength = 0.1f;
+    noise.baseroughness = 1.2f;
+    noise.roughness = 2.34;
+    noise.persistence = 0.50f;
+    noise.layers = 5;
+    noise.centre = glm::vec3(1);
+    noise.minValue = 0;//1.5;
+    shapeSettings.noiselayer[2]->filter->noiseSetting = noise;
+    shapeSettings.noiselayer[2]->useFisrtLayerAsMask = false;
+
     node->shapesettings = shapeSettings;
     ColourGenerator* colors = new ColourGenerator(1);
     colors->filter->noiseSetting.strength = 1;
@@ -343,9 +379,15 @@ void DefultMoon(SceneNode* node) {
     biome.tint = glm::vec4(1);
     biome.startheight = 0.0f;
     biome.coloursettings.colour = {
-        {0.00f, glm::vec4(0, 0, 0, 255)}, // Light gray
-        {0.50f, glm::vec4(180, 180, 180, 255)}, // Lighter gray
-        {0.00f, glm::vec4(60, 40, 40, 255)} 
+    {0.00f, glm::vec4(20, 20, 30, 255)}, // Moon's deep craters
+    {0.15f, glm::vec4(40, 40, 60, 255)}, // Shadowed areas
+    {0.35f, glm::vec4(80, 80, 100, 255)}, // Darker flat terrain
+    {0.50f, glm::vec4(100, 100, 120, 255)}, // General flat terrain
+    {0.65f, glm::vec4(120, 120, 140, 255)}, // Lighter flat terrain
+    {0.75f, glm::vec4(140, 140, 160, 255)}, // Brighter flat terrain
+    {0.85f, glm::vec4(160, 160, 180, 255)}, // High terrain
+    {0.90f, glm::vec4(180, 180, 200, 255)}, // Higher terrain
+    {1.00f, glm::vec4(200, 200, 220, 255)}  // Moon's peaks
     };
     colors->biomes[0] = biome;
 
@@ -425,7 +467,7 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     Mesh box = cube(boxDimensions, glm::vec2(3000), true, true);
     Mesh moon = sphereCube(padDimensions, glm::vec2(30, 30), true, false, glm::vec3(1), 10.0, cameraPosition);
     Mesh astroid = sphereCube(padDimensions, glm::vec2(30, 30), true, false, glm::vec3(1), 10.0, cameraPosition);
-    Mesh sun = generateSphere(30.0, 40, 40);
+    Mesh sun = generateSphere(10.0, 40, 40);
     Mesh screen = Screenplane();
     // Fill buffers
     int textureid = GetLoadedImage(ASCII);
@@ -443,13 +485,14 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     padNode->vertices = pad.vertices;
     padNode->originalVertices = pad.vertices;
     DefultPlanet(padNode);
-    padNode->position.x += 10;
+    padNode->position.x = -143;
+    padNode->position.z = -7;
 
     moonNode = createSceneNode();
     moonNode->originalVertices = moon.vertices;
     moonNode->vertices = moon.vertices;
     DefultMoon(moonNode);
-    moonNode->position = { 20, 10, 30 };
+    moonNode->position = { 132, 25, -2.12 };
 
     astroidNode = createSceneNode();
     astroidNode->originalVertices = astroid.vertices;
@@ -520,7 +563,7 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     screenNode->id = 1337;
 
     lightLeftNode->color = glm::vec3(255.0f/255, 255.0f / 255, 255/255);
-    lightLeftNode->position = { 200, 60, 0 };
+    lightLeftNode->position = { 280, 60, 0 };
     
 
     textureNode->position = { float(windowWidth/6.0)-(29*3), float(windowHeight / 2.0), 0.0};
@@ -549,49 +592,57 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
 
     std::cout << "Ready. Click to start!" << std::endl;
 }
-int celeplanet = 0;
+int celeplanet = 1;
 void processInput(GLFWwindow* window,float timeDelta, SceneNode* node) {
     ShapeSettings shapeSettings = node->shapesettings;
     if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
         cameraPosition.x -= timeDelta * 100.0;
+        printf("\n cameraPosition.x: %g", cameraPosition.x);
     }
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
         cameraPosition.x += timeDelta * 100.0;
+        printf("\n cameraPosition.x: %g", cameraPosition.x);
     }
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
         cameraPosition.z -= timeDelta * 100.0;
+        printf("\n cameraPosition.z: %g", cameraPosition.z);
     }
     if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
         cameraPosition.z += timeDelta * 100.0;
+        printf("\n cameraPosition.z: %g", cameraPosition.z);
     }
     if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
         cameraPosition.y += timeDelta * 100.0;
+        printf("\n cameraPosition.z: %g", cameraPosition.z);
     }
     if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
         cameraPosition.y -= timeDelta * 100.0;
+        printf("\n cameraPosition.z: %g", cameraPosition.z);
     }
     if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS) {
         rotasjonsomething -= timeDelta * 100.0;
+        printf("\n rotasjonsomething.x: %g", rotasjonsomething);
     }
     if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) {
         rotasjonsomething += timeDelta * 100.0;
+        printf("\n rotasjonsomething: %g", rotasjonsomething);
         
     }
     if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) {
         rotasjonupanddown += timeDelta ;
+        printf("\n rotasjonsomething: %g", rotasjonupanddown);
     }
     if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) {
         rotasjonupanddown -= timeDelta ;
+        printf("\n rotasjonsomething: %g", rotasjonupanddown);
     }
     if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS) {
-
-        printf("\n padNode->position.x: %g", padNode->position.x);
-        printf("\n padNode->position.y: %g", padNode->position.y);
-        printf("\n padNode->position.z: %g", padNode->position.z);
-        rotasjonfloat += timeDelta ;
+        rotasjonfloat -= timeDelta;
+        printf("\n rotasjonsomething: %g", rotasjonfloat);
     }
     if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS) {
         rotasjonfloat -= timeDelta;
+        printf("\n rotasjonsomething: %g", rotasjonfloat);
     }
 
     if (glfwGetKey(window, GLFW_KEY_T) == GLFW_PRESS) {
@@ -642,6 +693,8 @@ void processInput(GLFWwindow* window,float timeDelta, SceneNode* node) {
     }
 
     if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS) {
+
+
         shapeSettings.noiselayer[0]->enable = !shapeSettings.noiselayer[0]->enable;
         node->change = true;
         printf("\n1 off: %B", shapeSettings.noiselayer[0]->enable);
@@ -661,36 +714,58 @@ void processInput(GLFWwindow* window,float timeDelta, SceneNode* node) {
 
 
     if (glfwGetKey(window, GLFW_KEY_0) == GLFW_PRESS) {
-        lightLeftNode->position.x -= timeDelta * 100.0; 
-        printf("\n ligthposition x: %g ", lightLeftNode->position.x);
+        padNode->position.x -= timeDelta * 100.0;
+        printf("\n ligthposition x: %g ", padNode->position.x);
     }
     if (glfwGetKey(window, GLFW_KEY_9) == GLFW_PRESS) {
-        lightLeftNode->position.x += timeDelta * 100.0;
-        printf("\n ligthposition x: %g ", lightLeftNode->position.x);
+        padNode->position.x += timeDelta * 100.0;
+        printf("\n ligthposition x: %g ", padNode->position.x);
     }
     if (glfwGetKey(window, GLFW_KEY_8) == GLFW_PRESS) {
-        lightLeftNode->position.z -= timeDelta * 100.0;
-        printf("\n ligthposition z: %g ", lightLeftNode->position.z);
+        padNode->position.z -= timeDelta * 100.0;
+        printf("\n ligthposition z: %g ", padNode->position.z);
     }
     if (glfwGetKey(window, GLFW_KEY_7) == GLFW_PRESS) {
-        lightLeftNode->position.z += timeDelta * 100.0;
-        printf("\n ligthposition z: %g ", lightLeftNode->position.z);
+        padNode->position.z += timeDelta * 100.0;
+        printf("\n ligthposition z: %g ", padNode->position.z);
     }
+
+
+    if (glfwGetKey(window, GLFW_KEY_M) == GLFW_PRESS) {
+        scatteringStrength -= 0.1;
+        printf("\n scatteringStrength x: %g ", scatteringStrength);
+    }
+    if (glfwGetKey(window, GLFW_KEY_N) == GLFW_PRESS) {
+        scatteringStrength +=  0.1;
+        printf("\n scatteringStrength x: %g ", scatteringStrength);
+    }
+    if (glfwGetKey(window, GLFW_KEY_B) == GLFW_PRESS) {
+        densityFalloff -= 0.1;
+        printf("\n densityFalloff z: %g ", densityFalloff);
+    }
+    if (glfwGetKey(window, GLFW_KEY_V) == GLFW_PRESS) {
+        densityFalloff += 0.1;
+        printf("\n densityFalloff z: %g ", densityFalloff);
+    }
+    if (glfwGetKey(window, GLFW_KEY_C) == GLFW_PRESS) {
+        intensity -= 0.1;
+        printf("\n intensity z: %g ", intensity);
+    }
+    if (glfwGetKey(window, GLFW_KEY_X) == GLFW_PRESS) {
+        intensity += 0.1;
+        printf("\n intensity z: %g ", intensity);
+    }
+
 
 }
 
 void updateFrame(GLFWwindow* window) {
 
     glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
-    /*glEnable(GL_DEPTH_TEST);*/
     glEnable(GL_DEPTH_TEST);
-
-    //glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
-
     // Clear color and depth buffers
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
 
 
     double timeDelta = getTimeDeltaSeconds();
@@ -882,12 +957,24 @@ void renderNode(SceneNode* node) {
             glUniform3f(17, padNode->position.x, padNode->position.y, padNode->position.z);
             glUniform2f(18, padNode->shapesettings.minmax.Min, padNode->shapesettings.minmax.Max);
 
-            GLint location = shader->getUniformFromName("lights[" + std::to_string(lightLeftNode->id) + "].position");
-            GLint colorlocation = shader->getUniformFromName("lights[" + std::to_string(lightLeftNode->id) + "].color");
+            GLint location = planeshader->getUniformFromName("lights[" + std::to_string(lightLeftNode->id) + "].position");
+            GLint colorlocation = planeshader->getUniformFromName("lights[" + std::to_string(lightLeftNode->id) + "].color");
             glm::vec3 light = lightLeftNode->currentTransformationMatrix * glm::vec4(0, 0, 0, 1);
 
+
+            int densityFalloffLocation = planeshader->getUniformFromName("densityFalloff");
+            int scatteringStrengthLocation = planeshader->getUniformFromName( "scatteringStrength");
+            int intensityLocation = planeshader->getUniformFromName( "intensity");
+            int numInScatteringPointsLocation = planeshader->getUniformFromName( "numInScatteringPoints");
+            int numOpticalDepthPointsLocation = planeshader->getUniformFromName( "numOpticalDepthPoints");
+
+            glUniform1f(densityFalloffLocation, densityFalloff);
+            glUniform1f(scatteringStrengthLocation, scatteringStrength);
+            glUniform1f(intensityLocation, intensity);
+            glUniform1f(numInScatteringPointsLocation, numInScatteringPoints);
+            glUniform1f(numOpticalDepthPointsLocation, numOpticalDepthPoints);
+
             glUniform3f(location, light.x, light.y, light.z);
-            glUniform3f(colorlocation, lightLeftNode->color.x, lightLeftNode->color.y, lightLeftNode->color.z);
             
             if (node->vertexArrayObjectID != -1) {
                 

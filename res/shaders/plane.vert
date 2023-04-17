@@ -16,6 +16,5 @@ void main()
     vec4 vertpos4 = (  V * M ) * vec4(position, 1.0f);
     vertPos = vec3(vertpos4) / vertpos4.w;
     textureCoordinates_out = textureCoordinates_in;
- //   gl_Position = ( P * V * M ) * vec4(position, 1.0f);
     gl_Position = vec4(position.x,position.y ,0, 1.0f);
 }
