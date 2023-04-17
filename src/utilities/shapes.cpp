@@ -228,8 +228,8 @@ Mesh sphereCube(glm::vec3 scale, glm::vec2 textureScale, bool tilingTextures, bo
                         glm::vec3 bottom = glm::mix(bottomLeft, bottomRight, u);
                         glm::vec3 point = glm::mix(top, bottom, v);
 
-                        glm::vec3 sphericalPoint = glm::normalize(point); // Normalize and scale by radius
-                        quadPoints[idx] = sphericalPoint; // Directly use the sphericalPoint
+                        glm::vec3 sphericalPoint = glm::normalize(point); 
+                        quadPoints[idx] = sphericalPoint; 
                         
                     }
 

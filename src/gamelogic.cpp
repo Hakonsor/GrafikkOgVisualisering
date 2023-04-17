@@ -59,7 +59,7 @@ SceneNode* padNode;
 SceneNode* moonNode;
 SceneNode* astroidNode;
 SceneNode* screenNode;
-
+SceneNode* select;
 SceneNode* lightLeftNode;
 
 SceneNode* textureNode;
@@ -91,11 +91,7 @@ bool mouseRightPressed  = false;
 bool mouseRightReleased = false;
 
 PNGImage ASCII = loadPNGFile("../res/textures/charmap.png");
-PNGImage brick_normalmap = loadPNGFile("../res/textures/Brick03_nrm.png");
 PNGImage brick_diffuse = loadPNGFile("../res/textures/space_rt.png");
-PNGImage brick03_rgh = loadPNGFile("../res/textures/Brick03_rgh.png");
-PNGImage world = loadPNGFile("../res/textures/world.png");
-
 
 
 unsigned int GetLoadedImage(PNGImage texture) {
@@ -417,10 +413,15 @@ void DefaultAsteroid(SceneNode* node) {
     biome.tint = glm::vec4(1);
     biome.startheight = 0.0f;
     biome.coloursettings.colour = {
-          {0.00f, glm::vec4(60, 40, 40, 255)},
-        {0.00f, glm::vec4(60, 40, 40, 255)}, // Dark brown
-        {0.50f, glm::vec4(100, 70, 70, 255)}, // Medium brown
-        {1.00f, glm::vec4(140, 100, 100, 255)} // Lighter brown
+    {0.00f, glm::vec4(30, 10, 60, 255)}, // Magical deep caves
+    {0.20f, glm::vec4(50, 30, 100, 255)}, // Enchanted forests
+    {0.40f, glm::vec4(100, 60, 180, 255)}, // Mystic flat terrain
+    {0.50f, glm::vec4(150, 100, 200, 255)}, // General flat terrain
+    {0.60f, glm::vec4(200, 140, 220, 255)}, // Fairy meadows
+    {0.70f, glm::vec4(255, 180, 240, 255)}, // Dreamy highlands
+    {0.80f, glm::vec4(255, 215, 245, 255)}, // High terrain
+    {0.90f, glm::vec4(255, 240, 250, 255)}, // Higher terrain
+    {1.00f, glm::vec4(255, 255, 255, 255)}  // Fantasy realm peaks
     };
     colors->biomes[0] = biome;
 
@@ -428,9 +429,15 @@ void DefaultAsteroid(SceneNode* node) {
     biome.tint = glm::vec4(1);
     biome.startheight = 0.5f;
     biome.coloursettings.colour = {
-        {0.00f, glm::vec4(130, 100, 100, 255)}, // Light brown
-        {0.50f, glm::vec4(160, 130, 130, 255)}, // Lighter brown
-        {1.00f, glm::vec4(190, 160, 160, 255)} // Almost white-brown
+    {0.00f, glm::vec4(30, 10, 60, 255)}, // Magical deep caves
+    {0.20f, glm::vec4(50, 30, 100, 255)}, // Enchanted forests
+    {0.40f, glm::vec4(100, 60, 180, 255)}, // Mystic flat terrain
+    {0.50f, glm::vec4(150, 100, 200, 255)}, // General flat terrain
+    {0.60f, glm::vec4(200, 140, 220, 255)}, // Fairy meadows
+    {0.70f, glm::vec4(255, 180, 240, 255)}, // Dreamy highlands
+    {0.80f, glm::vec4(255, 215, 245, 255)}, // High terrain
+    {0.90f, glm::vec4(255, 240, 250, 255)}, // Higher terrain
+    {1.00f, glm::vec4(255, 255, 255, 255)}  // Fantasy realm peaks
     };
     colors->biomes[1] = biome;
 
@@ -511,7 +518,7 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     int windowWidth, windowHeight;
     glfwGetWindowSize(window, &windowWidth, &windowHeight);
 
-
+    select = astroidNode;
     // Generate framebuffer
     // Generate framebuffer
     glGenFramebuffers(1, &framebuffer);
@@ -581,9 +588,9 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     /// oblig 2
     textureNode->textureID = textureid;
 
-    boxNode->textureID = GetLoadedImage(brick_diffuse);
+    boxNode->textureID = GetLoadedImage(brick_diffuse);/*
     boxNode->textureNormal = GetLoadedImage(brick_normalmap);
-    boxNode->textureRoughness = GetLoadedImage(brick03_rgh);
+    boxNode->textureRoughness = GetLoadedImage(brick03_rgh);*/
     /*padNode->textureID = GetLoadedImage(world);*/
     getTimeDeltaSeconds();
 
@@ -592,30 +599,31 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     std::cout << "Ready. Click to start!" << std::endl;
 }
 int celeplanet = 0;
+int buttonpress = false;
 void processInput(GLFWwindow* window,float timeDelta, SceneNode* node) {
     ShapeSettings shapeSettings = node->shapesettings;
     if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
-        cameraPosition.x -= timeDelta * 100.0;
+        cameraPosition.x -= timeDelta * 10.0;
         printf("\n cameraPosition.x: %g", cameraPosition.x);
     }
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
-        cameraPosition.x += timeDelta * 100.0;
+        cameraPosition.x += timeDelta * 10.0;
         printf("\n cameraPosition.x: %g", cameraPosition.x);
     }
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
-        cameraPosition.z -= timeDelta * 100.0;
+        cameraPosition.z -= timeDelta * 10.0;
         printf("\n cameraPosition.z: %g", cameraPosition.z);
     }
     if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
-        cameraPosition.z += timeDelta * 100.0;
+        cameraPosition.z += timeDelta * 10.0;
         printf("\n cameraPosition.z: %g", cameraPosition.z);
     }
     if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
-        cameraPosition.y += timeDelta * 100.0;
+        cameraPosition.y += timeDelta * 10.0;
         printf("\n cameraPosition.z: %g", cameraPosition.z);
     }
     if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
-        cameraPosition.y -= timeDelta * 100.0;
+        cameraPosition.y -= timeDelta * 10.0;
         printf("\n cameraPosition.z: %g", cameraPosition.z);
     }
     if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) {
@@ -702,39 +710,51 @@ void processInput(GLFWwindow* window,float timeDelta, SceneNode* node) {
 
         shapeSettings.noiselayer[0]->enable = !shapeSettings.noiselayer[0]->enable;
         node->change = true;
-        printf("\n1 off: %B", shapeSettings.noiselayer[0]->enable);
+        printf("\n\nFILTER 0 OFF/ON  %d", static_cast<int>(shapeSettings.noiselayer[0]->enable));
     }
 
     if (glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS) {
         shapeSettings.noiselayer[1]->enable = !shapeSettings.noiselayer[1]->enable;
         node->change = true;
-        printf("\n2 off: %B", shapeSettings.noiselayer[1]->enable);
+        printf("\n\nFILTER 0 OFF/ON  %d", static_cast<int>(shapeSettings.noiselayer[0]->enable));
     }
 
     if (glfwGetKey(window, GLFW_KEY_3) == GLFW_PRESS) {
         shapeSettings.noiselayer[2]->enable = !shapeSettings.noiselayer[2]->enable;
         node->change = true;
-        printf("\n3 off: %B", shapeSettings.noiselayer[2]->enable);
+        printf("\n\nFILTER 0 OFF/ON  %d", static_cast<int>(shapeSettings.noiselayer[0]->enable));
     }
 
 
     if (glfwGetKey(window, GLFW_KEY_0) == GLFW_PRESS) {
-        padNode->position.x -= timeDelta * 100.0;
-        printf("\n ligthposition x: %g ", padNode->position.x);
+        celeplanet = 0;
+        printf("\n FILTER 0 SELECTED ");
     }
     if (glfwGetKey(window, GLFW_KEY_9) == GLFW_PRESS) {
-        padNode->position.x += timeDelta * 100.0;
-        printf("\n ligthposition x: %g ", padNode->position.x);
+        printf("\n FILTER 1 SELECTED ");
+        celeplanet = 1;
     }
     if (glfwGetKey(window, GLFW_KEY_8) == GLFW_PRESS) {
-        padNode->position.z -= timeDelta * 100.0;
-        printf("\n ligthposition z: %g ", padNode->position.z);
+        printf("\n FILTER 2 SELECTED ");
+        celeplanet = 2;
     }
     if (glfwGetKey(window, GLFW_KEY_7) == GLFW_PRESS) {
-        padNode->position.z += timeDelta * 100.0;
-        printf("\n ligthposition z: %g ", padNode->position.z);
+        if(buttonpress == false)
+        if (node->vertexArrayObjectID == padNode->vertexArrayObjectID) {
+            select = moonNode;
+            printf("\n MOON SELECTED ");
+        } else if (node->vertexArrayObjectID == moonNode->vertexArrayObjectID)
+        {
+            select = astroidNode;
+            printf("\n ASTROID SELECTED ");
+        }
+        else {
+            select = padNode;
+            printf("\n PLANET SELECTED ");
+        }
+        buttonpress = true;
     }
-
+    if (glfwGetKey(window, GLFW_KEY_7) == GLFW_RELEASE) buttonpress = false;
 
     if (glfwGetKey(window, GLFW_KEY_M) == GLFW_PRESS) {
         scatteringStrength -= 0.1;
@@ -775,7 +795,7 @@ void updateFrame(GLFWwindow* window) {
 
     double timeDelta = getTimeDeltaSeconds();
 
-    processInput(window, timeDelta, astroidNode);
+    processInput(window, timeDelta, select);
    
     // Set up camera
     glm::vec3 camera_position = cameraPosition;
