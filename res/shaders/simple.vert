@@ -24,8 +24,7 @@ out layout(location = 3) mat3 TBN;
 out layout(location = 7) vec3 vPosition;
 out layout(location = 13) vec2 v_noise;
 out layout(location = 14) vec3 vetorEye;
-//out layout(location = 16) float depth;
-//
+
 
 void main()
 {

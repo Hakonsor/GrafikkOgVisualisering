@@ -498,8 +498,7 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     astroidNode->originalVertices = astroid.vertices;
     astroidNode->vertices = astroid.vertices;
     DefaultAsteroid(astroidNode);
-    astroidNode->position = { 10, 10, 30 };
-
+    astroidNode->position = { 40, 2, 195 };
     textureNode = createSceneNode();
     generateBufferWhitNode(pad, *padNode);
     generateBufferWhitNode(box, *boxNode);
@@ -577,7 +576,7 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     rootNode->children.push_back(lightLeftNode);
     
     lightLeftNode->children.push_back(sunNode);
-    rootNode->children.push_back(textureNode);
+    /*rootNode->children.push_back(textureNode);*/
     
     /// oblig 2
     textureNode->textureID = textureid;
@@ -592,7 +591,7 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
 
     std::cout << "Ready. Click to start!" << std::endl;
 }
-int celeplanet = 1;
+int celeplanet = 0;
 void processInput(GLFWwindow* window,float timeDelta, SceneNode* node) {
     ShapeSettings shapeSettings = node->shapesettings;
     if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
@@ -619,62 +618,68 @@ void processInput(GLFWwindow* window,float timeDelta, SceneNode* node) {
         cameraPosition.y -= timeDelta * 100.0;
         printf("\n cameraPosition.z: %g", cameraPosition.z);
     }
-    if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS) {
-        rotasjonsomething -= timeDelta * 100.0;
-        printf("\n rotasjonsomething.x: %g", rotasjonsomething);
-    }
-    if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) {
-        rotasjonsomething += timeDelta * 100.0;
-        printf("\n rotasjonsomething: %g", rotasjonsomething);
-        
-    }
-    if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) {
-        rotasjonupanddown += timeDelta ;
-        printf("\n rotasjonsomething: %g", rotasjonupanddown);
-    }
-    if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) {
-        rotasjonupanddown -= timeDelta ;
-        printf("\n rotasjonsomething: %g", rotasjonupanddown);
-    }
-    if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS) {
-        rotasjonfloat -= timeDelta;
-        printf("\n rotasjonsomething: %g", rotasjonfloat);
-    }
-    if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS) {
-        rotasjonfloat -= timeDelta;
-        printf("\n rotasjonsomething: %g", rotasjonfloat);
-    }
-
-    if (glfwGetKey(window, GLFW_KEY_T) == GLFW_PRESS) {
-        shapeSettings.noiselayer[celeplanet]->filter->noiseSetting.minValue -= 0.10;
-        node->change = true;
-        printf("\nminvalue: %g", shapeSettings.noiselayer[celeplanet]->filter->noiseSetting.minValue);
-    }
-    if (glfwGetKey(window, GLFW_KEY_Y) == GLFW_PRESS) {
-        shapeSettings.noiselayer[celeplanet]->filter->noiseSetting.minValue += 0.10;
-        node->change = true;
-        printf("\nminvalue: %g", shapeSettings.noiselayer[celeplanet]->filter->noiseSetting.minValue);
-    }
-    if (glfwGetKey(window, GLFW_KEY_G) == GLFW_PRESS) {
-        shapeSettings.noiselayer[celeplanet]->filter->noiseSetting.roughness -= 0.10;
-        node->change = true;
-        printf("\nroughness: %g", shapeSettings.noiselayer[celeplanet]->filter->noiseSetting.roughness);
-    }
-    if (glfwGetKey(window, GLFW_KEY_H) == GLFW_PRESS) {
-        shapeSettings.noiselayer[celeplanet]->filter->noiseSetting.roughness += 0.10;
-        node->change = true;
-        printf("\nroughness: %g", shapeSettings.noiselayer[celeplanet]->filter->noiseSetting.roughness);
-    }
-    if (glfwGetKey(window, GLFW_KEY_O) == GLFW_PRESS) {
-        shapeSettings.noiselayer[celeplanet]->filter->noiseSetting.strength -= 0.10;
-        node->change = true;
-        printf("\nstrength: %g", shapeSettings.noiselayer[celeplanet]->filter->noiseSetting.strength);
-    }
-    if (glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS) {
+    if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) {
         shapeSettings.noiselayer[celeplanet]->filter->noiseSetting.strength += 0.10;
         node->change = true;
         printf("\nstrength: %g", shapeSettings.noiselayer[celeplanet]->filter->noiseSetting.strength);
     }
+    if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) {
+        shapeSettings.noiselayer[celeplanet]->filter->noiseSetting.strength -= 0.10;
+        node->change = true;
+        printf("\nstrength: %g", shapeSettings.noiselayer[celeplanet]->filter->noiseSetting.strength);
+        
+    }
+    if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) {
+        shapeSettings.noiselayer[celeplanet]->filter->noiseSetting.minValue += 0.10;
+        node->change = true;
+        printf("\nminvalue: %g", shapeSettings.noiselayer[celeplanet]->filter->noiseSetting.minValue);
+    }
+    if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) {
+        shapeSettings.noiselayer[celeplanet]->filter->noiseSetting.minValue -= 0.10;
+        node->change = true;
+        printf("\nminvalue: %g", shapeSettings.noiselayer[celeplanet]->filter->noiseSetting.minValue);
+    }
+    if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS) {
+        shapeSettings.noiselayer[celeplanet]->filter->noiseSetting.roughness -= 0.10;
+        node->change = true;
+        printf("\nroughness: %g", shapeSettings.noiselayer[celeplanet]->filter->noiseSetting.roughness);
+    }
+    if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS) {
+        shapeSettings.noiselayer[celeplanet]->filter->noiseSetting.roughness += 0.10;
+        node->change = true;
+        printf("\nroughness: %g", shapeSettings.noiselayer[celeplanet]->filter->noiseSetting.roughness);
+    }
+
+    //if (glfwGetKey(window, GLFW_KEY_T) == GLFW_PRESS) {
+    //    shapeSettings.noiselayer[celeplanet]->filter->noiseSetting.minValue -= 0.10;
+    //    node->change = true;
+    //    printf("\nminvalue: %g", shapeSettings.noiselayer[celeplanet]->filter->noiseSetting.minValue);
+    //}
+    //if (glfwGetKey(window, GLFW_KEY_Y) == GLFW_PRESS) {
+    //    shapeSettings.noiselayer[celeplanet]->filter->noiseSetting.minValue += 0.10;
+    //    node->change = true;
+    //    printf("\nminvalue: %g", shapeSettings.noiselayer[celeplanet]->filter->noiseSetting.minValue);
+    //}
+    //if (glfwGetKey(window, GLFW_KEY_G) == GLFW_PRESS) {
+    //    shapeSettings.noiselayer[celeplanet]->filter->noiseSetting.roughness -= 0.10;
+    //    node->change = true;
+    //    printf("\nroughness: %g", shapeSettings.noiselayer[celeplanet]->filter->noiseSetting.roughness);
+    //}
+    //if (glfwGetKey(window, GLFW_KEY_H) == GLFW_PRESS) {
+    //    shapeSettings.noiselayer[celeplanet]->filter->noiseSetting.roughness += 0.10;
+    //    node->change = true;
+    //    printf("\nroughness: %g", shapeSettings.noiselayer[celeplanet]->filter->noiseSetting.roughness);
+    //}
+    //if (glfwGetKey(window, GLFW_KEY_O) == GLFW_PRESS) {
+    //    shapeSettings.noiselayer[celeplanet]->filter->noiseSetting.strength -= 0.10;
+    //    node->change = true;
+    //    printf("\nstrength: %g", shapeSettings.noiselayer[celeplanet]->filter->noiseSetting.strength);
+    //}
+    //if (glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS) {
+    //    shapeSettings.noiselayer[celeplanet]->filter->noiseSetting.strength += 0.10;
+    //    node->change = true;
+    //    printf("\nstrength: %g", shapeSettings.noiselayer[celeplanet]->filter->noiseSetting.strength);
+    //}
 
     if (glfwGetKey(window, GLFW_KEY_X) == GLFW_PRESS) {
         shapeSettings.noiselayer[celeplanet]->filter->noiseSetting.centre.x += 0.10;
@@ -770,7 +775,7 @@ void updateFrame(GLFWwindow* window) {
 
     double timeDelta = getTimeDeltaSeconds();
 
-    processInput(window, timeDelta, moonNode);
+    processInput(window, timeDelta, astroidNode);
    
     // Set up camera
     glm::vec3 camera_position = cameraPosition;

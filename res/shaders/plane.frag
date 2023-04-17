@@ -191,14 +191,8 @@ void main()
     initColor();
 
     vec4 atmosphericEffect = updatedcolor;
-//    atmosphericEffect = asmophere2(updatedcolor, atmosphericRadius, depth, eyeSpacePos.xyz);
-//    atmosphericEffect = asmophere(updatedcolor, atmosphericRadius, depth, eyeSpacePos.xyz);
-//    if(distance(eye, atmosphereCenter) < atmosphericRadius){
-//        atmosphericEffect = asmophere(updatedcolor, atmosphericRadius, depth, eyeSpacePos.xyz);
-//    }else {
-        atmosphericEffect = asmophere2(updatedcolor, atmosphericRadius, depth, eyeSpacePos.xyz);
-////        
-//    }
+
+    atmosphericEffect = asmophere2(updatedcolor, atmosphericRadius, depth, eyeSpacePos.xyz);
 
 
     color = atmosphericEffect;

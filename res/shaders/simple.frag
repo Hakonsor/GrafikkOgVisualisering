@@ -53,8 +53,8 @@ float dither(vec2 uv) { return (rand(uv)*2.0-1.0) / 256.0; }
 
 
 // sun
-float diffuse_reflekton = 0.2;
-float ambient = 0.2;
+float diffuse_reflekton = 0.4;
+float ambient = 0.3;
 float shininessVal = 11;
 vec3 lightSpecular;
 float la = 0.000007;
